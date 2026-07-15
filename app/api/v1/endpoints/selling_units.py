@@ -16,11 +16,15 @@ def _format_unit(unit) -> dict:
     product = unit.product
     base_name = product.base_unit if product else "unit"
     
-    # Build display label
-    if unit.base_unit_quantity == 1:
+    # Build display label with clean number formatting
+    qty = unit.base_unit_quantity
+    # Remove trailing zeros: 6.000000 -> 6, 0.500000 -> 0.5
+    qty_str = str(float(qty)).rstrip('0').rstrip('.') if '.' in str(float(qty)) else str(int(qty))
+    
+    if qty == 1:
         display_label = unit.name
     else:
-        display_label = f"{unit.name} ({unit.base_unit_quantity} {base_name}{'s' if unit.base_unit_quantity > 1 else ''})"
+        display_label = f"{unit.name} ({qty_str} {base_name}{'s' if qty > 1 else ''})"
     
     return {
         "id": str(unit.id),
