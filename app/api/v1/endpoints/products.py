@@ -36,6 +36,14 @@ class ProductResponse(BaseModel):
     is_active: bool
     inventory_available: float
 
+def _get_display_label(unit, product) -> str:
+    qty = float(unit.base_unit_quantity)
+    base = product.base_unit or "unit"
+    if qty == 1:
+        return unit.name
+    qty_str = str(qty).rstrip('0').rstrip('.') if '.' in str(qty) else str(int(qty))
+    return f"{unit.name} ({qty_str} {base}{'s' if qty > 1 else ''})"    
+
 # --- Helper ---
 def _format_product(p) -> dict:
     return {
@@ -50,7 +58,20 @@ def _format_product(p) -> dict:
         "image_key": p.image_key,
         "low_stock_threshold": p.low_stock_threshold,
         "is_active": p.is_active,
-        "inventory_available": float(p.inventory.available_quantity) if p.inventory else 0.0
+        "inventory_available": float(p.inventory.available_quantity) if p.inventory else 0.0,
+        "selling_units": [
+            {
+                "id": str(u.id),
+                "name": u.name,
+                "display_label": _get_display_label(u, p),
+                "base_unit_quantity": float(u.base_unit_quantity),
+                "selling_price": float(u.selling_price) if u.selling_price else float(p.price),
+                "is_default": u.is_default,
+                "is_active": u.is_active,
+            }
+            for u in (p.selling_units or [])
+            if u.is_active
+        ]
     }
 
 # --- Routes ---
