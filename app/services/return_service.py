@@ -3,6 +3,7 @@ from app.repositories.return_repository import ReturnRepository
 from app.repositories.sales_repository import SalesRepository
 from app.services.inventory_service import InventoryService, StockMovementType
 from app.services.shift_service import ShiftService
+from app.models import SaleItem
 from decimal import Decimal
 from datetime import datetime
 from enum import Enum
