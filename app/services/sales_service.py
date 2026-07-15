@@ -90,6 +90,15 @@ class SalesService:
                 "total_price": line_total
             })
 
+        # 2.5. Validate discount against business settings max
+        if discount > 0 and subtotal > 0:
+            business = self.business_repo.get_business_with_settings(db, business_id)
+            max_discount_pct = float(business.settings.max_discount_percent) if business and business.settings else 10.0
+            discount_pct = (discount / subtotal) * 100
+            if discount_pct > max_discount_pct:
+                max_amount = subtotal * Decimal(str(max_discount_pct)) / 100
+                raise ValueError(f"Discount ({discount_pct:.1f}%) exceeds maximum allowed ({max_discount_pct}%). Maximum: ₦{float(max_amount):,.2f}")
+
         # 2. Calculate Tax and Grand Total
         tax_rate = self._get_tax_rate(db, business_id)
         tax = subtotal * tax_rate
@@ -147,8 +156,24 @@ class SalesService:
             db, business_id, cashier_id, sale.id, float(grand_total)
         )
 
-        # 8. Update shift totals
+                # 8. Update shift totals
         self.shift_service.update_shift_totals(db, shift.id, grand_total)
+
+        # 9. Log discount if applied
+        if discount > 0:
+            self.audit_service.log(
+                db, business_id, cashier_id,
+                "discount_applied", "sale", sale.id,
+                None,
+                {
+                    "discount_type": discount_type or "FIXED",
+                    "discount_amount": float(discount),
+                    "discount_reason": discount_reason or "",
+                    "subtotal": float(subtotal),
+                    "grand_total": float(grand_total),
+                },
+                f"Discount: ₦{float(discount):,.2f} ({discount_type or 'FIXED'})"
+            )
 
         return sale
 

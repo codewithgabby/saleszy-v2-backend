@@ -38,6 +38,7 @@ class BrandingSchema(BaseModel):
 class SettingsUpdateRequest(BaseModel):
     currency_symbol: Optional[str] = Field(None, max_length=5)
     tax_rate: Optional[float] = Field(None, ge=0, le=100)
+    max_discount_percent: Optional[float] = Field(None, ge=0, le=100)
     receipt_width: Optional[float] = Field(None, ge=40, le=120)
     timezone: Optional[str] = None
     language: Optional[str] = Field(None, min_length=2, max_length=10)
@@ -70,7 +71,8 @@ async def get_my_business(
                 "currency_symbol": business.settings.currency_symbol if business.settings else "₦",
                 "receipt_width": float(business.settings.receipt_width) if business.settings else 80.0,
                 "tax_rate": float(business.settings.tax_rate) if business.settings else 0.0,
-                "branding": business.settings.branding if business.settings else {}
+                "branding": business.settings.branding if business.settings else {},
+                "max_discount_percent": float(business.settings.max_discount_percent) if business.settings and business.settings.max_discount_percent else 10.0,
             }
         },
         message="Business profile retrieved successfully"
@@ -144,6 +146,7 @@ async def update_business_settings(
             "currency_symbol": updated.currency_symbol,
             "receipt_width": float(updated.receipt_width),
             "tax_rate": float(updated.tax_rate),
+            "max_discount_percent": float(updated.max_discount_percent) if updated.max_discount_percent else 10.0,
             "branding": updated.branding
         },
         message="Business settings updated successfully"

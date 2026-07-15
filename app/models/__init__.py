@@ -28,6 +28,7 @@ class BusinessSettings(BaseModel):
     receipt_width = Column(DECIMAL(5,2), default=80.00)
     tax_rate = Column(DECIMAL(5,2), default=0.00)
     branding = Column(JSON, default={})
+    max_discount_percent = Column(DECIMAL(5,2), default=10.00)  # Max discount managers can apply
 
 # --- USER MODEL ---
 class User(BaseModel):

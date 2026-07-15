@@ -94,6 +94,13 @@ async def create_sale(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # Discount permission: cashiers cannot discount, managers limited
+    if request.discount > 0 and current_user.role == "cashier":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cashiers cannot apply discounts. Ask a manager."
+        )
+
     try:
         sale = service.process_sale(
             db,
