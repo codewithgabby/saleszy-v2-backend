@@ -21,10 +21,16 @@ class ProductRepository:
         return db.query(Product).filter(Product.id == product_id, Product.is_active == True).first()
 
     def get_all(self, db: Session, business_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[Product]:
-        return db.query(Product).filter(
-            Product.business_id == business_id,
-            Product.is_active == True
-        ).offset(skip).limit(limit).all()
+        from sqlalchemy.orm import selectinload
+        return (
+            db.query(Product)
+            .options(selectinload(Product.selling_units))
+            .filter(
+                Product.business_id == business_id,
+                Product.is_active == True
+            )
+            .offset(skip).limit(limit).all()
+        )
 
     def create_product_with_inventory(
         self, 
@@ -80,8 +86,14 @@ class ProductRepository:
         return product
 
     def search_products(self, db: Session, business_id: uuid.UUID, query: str) -> List[Product]:
-        return db.query(Product).filter(
-            Product.business_id == business_id,
-            Product.is_active == True,
-            Product.name.ilike(f"%{query}%")
-        ).limit(20).all()
+        from sqlalchemy.orm import selectinload
+        return (
+            db.query(Product)
+            .options(selectinload(Product.selling_units))
+            .filter(
+                Product.business_id == business_id,
+                Product.is_active == True,
+                Product.name.ilike(f"%{query}%")
+            )
+            .limit(20).all()
+        )

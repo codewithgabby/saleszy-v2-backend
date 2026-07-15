@@ -22,6 +22,15 @@ class ProductCreate(BaseModel):
     image_key: Optional[str] = None
     low_stock_threshold: int = 5
 
+class SellingUnitItem(BaseModel):
+    id: str
+    name: str
+    display_label: str
+    base_unit_quantity: float
+    selling_price: Optional[float] = None
+    is_default: bool
+    is_active: bool
+
 class ProductResponse(BaseModel):
     id: str
     name: str
@@ -35,6 +44,7 @@ class ProductResponse(BaseModel):
     low_stock_threshold: int
     is_active: bool
     inventory_available: float
+    selling_units: List[SellingUnitItem] = []
 
 def _get_display_label(unit, product) -> str:
     qty = float(unit.base_unit_quantity)
