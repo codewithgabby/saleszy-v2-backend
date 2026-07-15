@@ -13,10 +13,20 @@ service = SellingUnitService()
 
 
 def _format_unit(unit) -> dict:
+    product = unit.product
+    base_name = product.base_unit if product else "unit"
+    
+    # Build display label
+    if unit.base_unit_quantity == 1:
+        display_label = unit.name
+    else:
+        display_label = f"{unit.name} ({unit.base_unit_quantity} {base_name}{'s' if unit.base_unit_quantity > 1 else ''})"
+    
     return {
         "id": str(unit.id),
         "product_id": str(unit.product_id),
         "name": unit.name,
+        "display_label": display_label,
         "base_unit_quantity": float(unit.base_unit_quantity),
         "selling_price": float(unit.selling_price) if unit.selling_price else None,
         "barcode": unit.barcode,
