@@ -71,6 +71,7 @@ def _format_sale_response(sale) -> dict:
         "customer_id": str(sale.customer_id) if sale.customer_id else None,
         "items": [
             {
+                "sale_item_id": str(item.id),
                 "product_id": str(item.product_id),
                 "selling_unit_name": item.selling_unit_name,
                 "quantity": float(item.quantity),
