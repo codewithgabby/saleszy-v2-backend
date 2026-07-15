@@ -39,3 +39,33 @@ class AuthRepository:
         db.add(user)
         db.flush()
         return user
+    
+    def get_users_by_business(self, db: Session, business_id: uuid.UUID) -> list[User]:
+        return db.query(User).filter(User.business_id == business_id, User.is_active == True).all()
+
+    def get_user_by_id(self, db: Session, user_id: uuid.UUID, business_id: uuid.UUID) -> User | None:
+        return db.query(User).filter(User.id == user_id, User.business_id == business_id).first()
+
+    def create_staff(self, db: Session, business_id: uuid.UUID, full_name: str, email: str, password_hash: str, role: str = "cashier") -> User:
+        user = User(
+            business_id=business_id,
+            full_name=full_name,
+            email=email,
+            password_hash=password_hash,
+            role=role
+        )
+        db.add(user)
+        db.flush()
+        return user
+
+    def update_user(self, db: Session, user: User, updates: dict) -> User:
+        for key, value in updates.items():
+            if hasattr(user, key) and value is not None:
+                setattr(user, key, value)
+        db.flush()
+        return user
+
+    def deactivate_user(self, db: Session, user: User) -> User:
+        user.is_active = False
+        db.flush()
+        return user

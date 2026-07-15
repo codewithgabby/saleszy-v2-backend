@@ -76,3 +76,115 @@ async def get_current_user_info(
         },
         message="User retrieved successfully"
     )
+
+class CreateStaffRequest(BaseModel):
+    full_name: str
+    email: EmailStr
+    password: str
+    role: str = "cashier"  # cashier, manager
+
+class UpdateStaffRequest(BaseModel):
+    full_name: str | None = None
+    email: EmailStr | None = None
+    role: str | None = None
+    is_active: bool | None = None
+
+class StaffResponse(BaseModel):
+    id: str
+    full_name: str
+    email: str
+    role: str
+    is_active: bool
+    last_login_at: str | None = None
+
+# --- Staff Routes ---
+@router.get("/staff")
+async def list_staff(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role != "owner":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owners can manage staff")
+    
+    users = service.repo.get_users_by_business(db, current_user.business_id)
+    return api_response(
+        data=[
+            {
+                "id": str(u.id),
+                "full_name": u.full_name,
+                "email": u.email,
+                "role": u.role,
+                "is_active": u.is_active,
+                "last_login_at": u.last_login_at.isoformat() if u.last_login_at else None
+            }
+            for u in users
+        ],
+        message=f"Retrieved {len(users)} staff members"
+    )
+
+@router.post("/staff", status_code=status.HTTP_201_CREATED)
+async def create_staff(
+    request: CreateStaffRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role != "owner":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owners can create staff")
+    
+    # Check email
+    existing = service.repo.get_user_by_email(db, request.email)
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+    
+    hashed = service.hash_password(request.password)
+    user = service.repo.create_staff(db, current_user.business_id, request.full_name, request.email, hashed, request.role)
+    db.commit()
+    
+    return api_response(
+        data={"id": str(user.id), "full_name": user.full_name, "email": user.email, "role": user.role},
+        message="Staff created successfully"
+    )
+
+@router.patch("/staff/{user_id}")
+async def update_staff(
+    user_id: str,
+    request: UpdateStaffRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role != "owner":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owners can update staff")
+    
+    from uuid import UUID
+    user = service.repo.get_user_by_id(db, UUID(user_id), current_user.business_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Staff not found")
+    
+    updates = {k: v for k, v in request.model_dump().items() if v is not None}
+    service.repo.update_user(db, user, updates)
+    db.commit()
+    
+    return api_response(
+        data={"id": str(user.id), "full_name": user.full_name, "email": user.email, "role": user.role, "is_active": user.is_active},
+        message="Staff updated"
+    )
+
+@router.delete("/staff/{user_id}")
+async def deactivate_staff(
+    user_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role != "owner":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owners can deactivate staff")
+    
+    from uuid import UUID
+    user = service.repo.get_user_by_id(db, UUID(user_id), current_user.business_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Staff not found")
+    if user.role == "owner":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot deactivate owner")
+    
+    service.repo.deactivate_user(db, user)
+    db.commit()
+    return api_response(message="Staff deactivated")    
