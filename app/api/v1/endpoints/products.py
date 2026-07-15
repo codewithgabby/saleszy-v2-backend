@@ -15,7 +15,7 @@ service = ProductService()
 class ProductCreate(BaseModel):
     name: str
     price: Decimal = Field(..., decimal_places=2)
-    base_unit: str = "Unit"  # e.g., "Loaf", "Bottle", "Kg", "Piece"
+    base_unit: str = "Unit"
     category_id: Optional[str] = None
     sku: Optional[str] = None
     barcode: Optional[str] = None
@@ -26,6 +26,7 @@ class ProductResponse(BaseModel):
     id: str
     name: str
     price: float
+    base_unit: str = "Unit"
     category_id: Optional[str] = None
     category_name: Optional[str] = None
     sku: Optional[str] = None
@@ -34,6 +35,23 @@ class ProductResponse(BaseModel):
     low_stock_threshold: int
     is_active: bool
     inventory_available: float
+
+# --- Helper ---
+def _format_product(p) -> dict:
+    return {
+        "id": str(p.id),
+        "name": p.name,
+        "price": float(p.price),
+        "base_unit": p.base_unit,
+        "category_id": str(p.category_id) if p.category_id else None,
+        "category_name": p.category.name if p.category else None,
+        "sku": p.sku,
+        "barcode": p.barcode,
+        "image_key": p.image_key,
+        "low_stock_threshold": p.low_stock_threshold,
+        "is_active": p.is_active,
+        "inventory_available": float(p.inventory.available_quantity) if p.inventory else 0.0
+    }
 
 # --- Routes ---
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=ProductResponse)
@@ -56,21 +74,7 @@ async def create_product(
             low_stock_threshold=request.low_stock_threshold
         )
         db.commit()
-        
-        # Return with inventory info
-        return {
-            "id": str(product.id),
-            "name": product.name,
-            "price": float(product.price),
-            "category_id": str(product.category_id) if product.category_id else None,
-            "category_name": product.category.name if product.category else None,
-            "sku": product.sku,
-            "barcode": product.barcode,
-            "image_key": product.image_key,
-            "low_stock_threshold": product.low_stock_threshold,
-            "is_active": product.is_active,
-            "inventory_available": float(product.inventory.available_quantity) if product.inventory else 0.0
-        }
+        return _format_product(product)
     except ValueError as e:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -83,22 +87,7 @@ async def get_products(
     db: Session = Depends(get_db)
 ):
     products = service.get_products(db, current_user.business_id)
-    return [
-        {
-            "id": str(p.id),
-            "name": p.name,
-            "price": float(p.price),
-            "category_id": str(p.category_id) if p.category_id else None,
-            "category_name": p.category.name if p.category else None,
-            "sku": p.sku,
-            "barcode": p.barcode,
-            "image_key": p.image_key,
-            "low_stock_threshold": p.low_stock_threshold,
-            "is_active": p.is_active,
-            "inventory_available": float(p.inventory.available_quantity) if p.inventory else 0.0
-        }
-        for p in products
-    ]
+    return [_format_product(p) for p in products]
 
 @router.get("/search", response_model=List[ProductResponse])
 async def search_products(
@@ -107,19 +96,4 @@ async def search_products(
     db: Session = Depends(get_db)
 ):
     products = service.search_products(db, current_user.business_id, query)
-    return [
-        {
-            "id": str(p.id),
-            "name": p.name,
-            "price": float(p.price),
-            "category_id": str(p.category_id) if p.category_id else None,
-            "category_name": p.category.name if p.category else None,
-            "sku": p.sku,
-            "barcode": p.barcode,
-            "image_key": p.image_key,
-            "low_stock_threshold": p.low_stock_threshold,
-            "is_active": p.is_active,
-            "inventory_available": float(p.inventory.available_quantity) if p.inventory else 0.0
-        }
-        for p in products
-    ]
+    return [_format_product(p) for p in products]
