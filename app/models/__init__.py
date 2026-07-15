@@ -207,3 +207,32 @@ class AuditLog(BaseModel):
     old_value = Column(JSON, nullable=True)
     new_value = Column(JSON, nullable=True)
     description = Column(String(500), nullable=True)
+
+# --- SHIFT MODEL ---
+class Shift(BaseModel):
+    __tablename__ = "shifts"
+    
+    business_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    opened_by_user_id = Column(UUID(as_uuid=True), nullable=False)
+    closed_by_user_id = Column(UUID(as_uuid=True), nullable=True)
+    status = Column(String(20), nullable=False, default="OPEN")  # OPEN, CLOSED
+    opening_cash = Column(DECIMAL(12,2), nullable=False, default=0.00)
+    expected_cash = Column(DECIMAL(12,2), nullable=True)
+    actual_cash = Column(DECIMAL(12,2), nullable=True)
+    cash_variance = Column(DECIMAL(12,2), nullable=True)
+    total_sales = Column(DECIMAL(12,2), nullable=False, default=0.00)
+    total_transactions = Column(Integer, nullable=False, default=0)
+    total_refunds = Column(DECIMAL(12,2), nullable=False, default=0.00)
+    opened_at = Column(DateTime(timezone=True), server_default=func.now())
+    closed_at = Column(DateTime(timezone=True), nullable=True)
+
+# --- SHIFT EVENT MODEL ---
+class ShiftEvent(BaseModel):
+    __tablename__ = "shift_events"
+    
+    shift_id = Column(UUID(as_uuid=True), ForeignKey("shifts.id"), nullable=False)
+    event_type = Column(String(30), nullable=False)  # OPENED, CLOSED, CASH_ADDED, CASH_REMOVED, CASH_DECLARATION
+    amount = Column(DECIMAL(12,2), nullable=True)
+    notes = Column(String(255), nullable=True)
+    created_by = Column(UUID(as_uuid=True), nullable=False)    

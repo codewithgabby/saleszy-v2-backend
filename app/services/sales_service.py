@@ -11,6 +11,7 @@ from app.services.activity_service import ActivityService
 from app.services.audit_service import AuditService
 from app.services.inventory_service import InventoryService, StockMovementType
 from app.services.selling_unit_service import SellingUnitService
+from app.services.shift_service import ShiftService
 
 class SalesService:
     def __init__(self):
@@ -22,6 +23,7 @@ class SalesService:
         self.audit_service = AuditService()
         self.selling_unit_service = SellingUnitService()
         self.inventory_service = InventoryService()
+        self.shift_service = ShiftService()
 
     def _generate_receipt_number(self, business_id: uuid.UUID) -> str:
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -49,6 +51,11 @@ class SalesService:
 
         subtotal = Decimal('0.00')
         processed_items = []
+
+        # 0. Verify cashier has an open shift
+        shift = self.shift_service.get_current_shift(db, cashier_id)
+        if not shift:
+            raise ValueError("No open shift. Please open a shift before making sales.")
 
         # 1. Validate all products and calculate totals
         for item in items:
@@ -135,6 +142,9 @@ class SalesService:
         self.activity_service.log_sale_completed(
             db, business_id, cashier_id, sale.id, float(grand_total)
         )
+
+        # 8. Update shift totals
+        self.shift_service.update_shift_totals(db, shift.id, grand_total)
 
         return sale
 
