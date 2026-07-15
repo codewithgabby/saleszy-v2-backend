@@ -151,6 +151,8 @@ class Sale(BaseModel):
     subtotal = Column(DECIMAL(12,2), nullable=False)
     tax = Column(DECIMAL(12,2), default=0.00)
     discount = Column(DECIMAL(12,2), default=0.00)
+    discount_type = Column(String(20), nullable=True)  # PERCENTAGE, FIXED
+    discount_reason = Column(String(255), nullable=True)
     grand_total = Column(DECIMAL(12,2), nullable=False)
     
     payment_method = Column(String(20), nullable=False)

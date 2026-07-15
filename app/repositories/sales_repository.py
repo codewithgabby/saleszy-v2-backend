@@ -21,7 +21,9 @@ class SalesRepository:
         receipt_number: str,
         cash_received: Decimal | None,
         change_given: Decimal | None,
-        items_data: list
+        items_data: list,
+        discount_type: str = None,
+        discount_reason: str = None,
     ) -> Sale:
         # 1. Create the Sale record
         sale = Sale(
@@ -31,6 +33,8 @@ class SalesRepository:
             subtotal=subtotal,
             tax=tax,
             discount=discount,
+            discount_type=discount_type,
+            discount_reason=discount_reason,
             grand_total=grand_total,
             payment_method=payment_method,
             receipt_number=receipt_number,

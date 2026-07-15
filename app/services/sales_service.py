@@ -44,7 +44,9 @@ class SalesService:
         items: list,
         payment_method: str,
         cash_received: Optional[Decimal] = None,
-        discount: Decimal = Decimal('0.00')
+        discount: Decimal = Decimal('0.00'),
+        discount_type: str = None,
+        discount_reason: str = None,
     ):
         if not items:
             raise ValueError("Sale must contain at least one item.")
@@ -120,7 +122,9 @@ class SalesService:
             receipt_number,
             cash_received,
             change_given,
-            processed_items
+            processed_items,
+            discount_type,
+            discount_reason,
         )
 
         # 6. Deduct inventory through centralized service (with stock ledger)

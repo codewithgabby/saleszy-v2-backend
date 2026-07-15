@@ -24,6 +24,8 @@ class SaleCreate(BaseModel):
     customer_id: Optional[str] = None
     cash_received: Optional[Decimal] = None
     discount: Decimal = Decimal('0.00')
+    discount_type: Optional[str] = None  # PERCENTAGE, FIXED
+    discount_reason: Optional[str] = None
 
 class VoidRequest(BaseModel):
     void_reason: str = Field(..., min_length=5, max_length=255)
@@ -101,7 +103,9 @@ async def create_sale(
             [item.model_dump() for item in request.items],
             request.payment_method,
             request.cash_received,
-            request.discount
+            request.discount,
+            request.discount_type,
+            request.discount_reason,
         )
         db.commit()
         
