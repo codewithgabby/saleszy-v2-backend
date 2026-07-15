@@ -176,6 +176,7 @@ class SaleItem(BaseModel):
     selling_unit_id = Column(UUID(as_uuid=True), ForeignKey("selling_units.id"), nullable=True)
     selling_unit_name = Column(String(100), nullable=True)          # Snapshot: "Carton", "Half Loaf"
     quantity = Column(DECIMAL(12,3), nullable=False)
+    returned_quantity = Column(DECIMAL(12,3), nullable=False, default=0.000)
     base_unit_quantity_used = Column(DECIMAL(18,6), nullable=False, default=1.0)  # Snapshot
     unit_price = Column(DECIMAL(12,2), nullable=False)
     total_price = Column(DECIMAL(12,2), nullable=False)
@@ -235,4 +236,40 @@ class ShiftEvent(BaseModel):
     event_type = Column(String(30), nullable=False)  # OPENED, CLOSED, CASH_ADDED, CASH_REMOVED, CASH_DECLARATION
     amount = Column(DECIMAL(12,2), nullable=True)
     notes = Column(String(255), nullable=True)
-    created_by = Column(UUID(as_uuid=True), nullable=False)    
+    created_by = Column(UUID(as_uuid=True), nullable=False)
+
+# --- RETURN MODEL ---
+class Return(BaseModel):
+    __tablename__ = "returns"
+    
+    business_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    sale_id = Column(UUID(as_uuid=True), ForeignKey("sales.id"), nullable=False)
+    shift_id = Column(UUID(as_uuid=True), ForeignKey("shifts.id"), nullable=False)
+    customer_id = Column(UUID(as_uuid=True), nullable=True)
+    processed_by_user_id = Column(UUID(as_uuid=True), nullable=False)
+    return_number = Column(String(50), unique=True, nullable=False)
+    return_type = Column(String(20), nullable=False)  # FULL, PARTIAL
+    reason_code = Column(String(30), nullable=False)
+    refund_method = Column(String(20), nullable=False)  # CASH, TRANSFER, POS
+    notes = Column(String(255), nullable=True)
+    subtotal = Column(DECIMAL(12,2), nullable=False)
+    tax = Column(DECIMAL(12,2), default=0.00)
+    total_refund = Column(DECIMAL(12,2), nullable=False)
+    status = Column(String(20), default="COMPLETED")  # COMPLETED, CANCELLED
+    
+    items = relationship("ReturnItem", back_populates="return_ref", cascade="all, delete-orphan")
+
+# --- RETURN ITEM MODEL ---
+class ReturnItem(BaseModel):
+    __tablename__ = "return_items"
+    
+    return_id = Column(UUID(as_uuid=True), ForeignKey("returns.id"), nullable=False)
+    sale_item_id = Column(UUID(as_uuid=True), nullable=False)
+    product_id = Column(UUID(as_uuid=True), nullable=False)
+    selling_unit_id = Column(UUID(as_uuid=True), nullable=True)
+    selling_unit_name = Column(String(100), nullable=True)
+    quantity = Column(DECIMAL(12,3), nullable=False)
+    base_unit_quantity_used = Column(DECIMAL(18,6), nullable=False)
+    refund_amount = Column(DECIMAL(12,2), nullable=False)
+    
+    return_ref = relationship("Return", back_populates="items")        
