@@ -46,6 +46,17 @@ class ProductResponse(BaseModel):
     inventory_available: float
     selling_units: List[SellingUnitItem] = []
 
+class ProductUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    price: Optional[Decimal] = Field(None, decimal_places=2, gt=0)
+    base_unit: Optional[str] = Field(None, min_length=1, max_length=50)
+    category_id: Optional[str] = None
+    sku: Optional[str] = None
+    barcode: Optional[str] = None
+    image_key: Optional[str] = None
+    low_stock_threshold: Optional[int] = Field(None, ge=0)
+    is_active: Optional[bool] = None    
+
 def _get_display_label(unit, product) -> str:
     qty = float(unit.base_unit_quantity)
     base = product.base_unit or "unit"
@@ -128,3 +139,31 @@ async def search_products(
 ):
     products = service.search_products(db, current_user.business_id, query)
     return [_format_product(p) for p in products]
+
+@router.patch("/{product_id}", response_model=ProductResponse)
+async def update_product(
+    product_id: str,
+    request: ProductUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    from uuid import UUID
+    try:
+        product_uuid = UUID(product_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid product ID")
+
+    update_data = {k: v for k, v in request.model_dump().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+
+    product = service.repo.get_by_id(db, product_uuid)
+    if not product or product.business_id != current_user.business_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+    for key, value in update_data.items():
+        setattr(product, key, value)
+
+    db.commit()
+    db.refresh(product)
+    return _format_product(product)    
