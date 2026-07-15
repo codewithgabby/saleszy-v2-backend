@@ -31,3 +31,46 @@ async def get_today_sales(
         "total_revenue": float(total_sales.total_revenue or 0),
         "currency": "₦"
     }
+
+@router.get("/top-products")
+async def get_top_products(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    limit: int = 10
+):
+    from app.models import SaleItem, Product, SellingUnit
+    
+    today_start = date.today()
+    
+    results = (
+        db.query(
+            Product.id.label("product_id"),
+            Product.name.label("product_name"),
+            SellingUnit.name.label("selling_unit_name"),
+            func.sum(SaleItem.quantity).label("quantity_sold"),
+            func.sum(SaleItem.total_price).label("total_revenue")
+        )
+        .join(Sale, SaleItem.sale_id == Sale.id)
+        .join(Product, SaleItem.product_id == Product.id)
+        .outerjoin(SellingUnit, SaleItem.selling_unit_id == SellingUnit.id)
+        .filter(
+            Sale.business_id == current_user.business_id,
+            Sale.status == "completed",
+            func.date(Sale.created_at) == today_start
+        )
+        .group_by(Product.id, Product.name, SellingUnit.name)
+        .order_by(func.sum(SaleItem.total_price).desc())
+        .limit(limit)
+        .all()
+    )
+    
+    return [
+        {
+            "product_id": str(r.product_id),
+            "product_name": r.product_name,
+            "selling_unit_name": r.selling_unit_name or "Unit",
+            "quantity_sold": float(r.quantity_sold),
+            "total_revenue": float(r.total_revenue)
+        }
+        for r in results
+    ]    
