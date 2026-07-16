@@ -6,7 +6,7 @@ from decimal import Decimal
 from datetime import datetime
 from app.db.database import get_db
 from app.api.deps import get_current_user
-from app.models import User
+from app.models import Sale, User
 from app.services.sales_service import SalesService
 from app.core.response import api_response
 
@@ -70,7 +70,10 @@ def _format_sale_response(sale) -> dict:
         "change_given": float(sale.change_given) if sale.change_given else None,
         "status": sale.status,
         "cashier_id": str(sale.cashier_id),
+        "cashier_name": getattr(sale, 'cashier_name', None),
         "customer_id": str(sale.customer_id) if sale.customer_id else None,
+        "customer_name": sale.customer.full_name if sale.customer else None,
+        "shift_id": str(sale.shift_id) if sale.shift_id else None,
         "items": [
             {
                 "sale_item_id": str(item.id),
@@ -79,7 +82,8 @@ def _format_sale_response(sale) -> dict:
                 "quantity": float(item.quantity),
                 "base_unit_quantity_used": float(item.base_unit_quantity_used) if item.base_unit_quantity_used else None,
                 "unit_price": float(item.unit_price),
-                "total_price": float(item.total_price)
+                "total_price": float(item.total_price),
+                "returned_quantity": float(item.returned_quantity) if item.returned_quantity else 0,
             } for item in sale.items
         ],
         "void_reason": sale.void_reason,
@@ -143,6 +147,23 @@ async def get_sale(
     return api_response(
         data=_format_sale_response(sale),
         message="Sale retrieved successfully"
+    ) 
+
+@router.get("/receipt/{receipt_number}")
+async def get_sale_by_receipt(
+    receipt_number: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    sale = db.query(Sale).filter(
+        Sale.business_id == current_user.business_id,
+        Sale.receipt_number == receipt_number
+    ).first()
+    if not sale:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sale not found")
+    return api_response(
+        data=_format_sale_response(sale),
+        message="Sale retrieved"
     )
 
 @router.get("/")
