@@ -100,9 +100,11 @@ class AnalyticsRepository:
             func.coalesce(func.sum(Sale.grand_total), 0).label("total"),
         ).filter(Sale.id.in_(base.with_entities(Sale.id))).group_by(Sale.payment_method).all()
         
-        payments = {m: {"count": 0, "total": 0} for m in DEFAULT_PAYMENT_METHODS}
+        total_payments = sum(float(p.total) for p in payment_data)
+        payments = {m: {"count": 0, "total": 0, "percentage": 0} for m in DEFAULT_PAYMENT_METHODS}
         for p in payment_data:
-            payments[p.payment_method] = {"count": p.count, "total": p.total}
+            pct = round((float(p.total) / total_payments) * 100, 1) if total_payments > 0 else 0
+            payments[p.payment_method] = {"count": p.count, "total": p.total, "percentage": pct}
         
         # Inventory summary
         inventory_data = db.query(
@@ -122,18 +124,18 @@ class AnalyticsRepository:
             Customer.id.in_(cust_base.with_entities(Customer.id))
         ).scalar()
         
-        rev = sales_data.revenue
+        gt = sales_data.net_revenue
         txns = sales_data.transactions
-        avg = rev / txns if txns > 0 else 0
+        avg = gt / txns if txns > 0 else 0
         
         return {
             "period": self._get_period(start_date, end_date),
             "sales": {
-                "revenue": sales_data.revenue,
+                "subtotal": sales_data.revenue,
                 "tax": sales_data.tax,
                 "discounts": sales_data.discounts,
                 "refunds": refunds or 0,
-                "net_revenue": sales_data.net_revenue,
+                "grand_total": sales_data.net_revenue,
                 "transactions": txns,
                 "average_sale": avg,
                 "items_sold": items_sold or 0,
@@ -220,10 +222,10 @@ class AnalyticsRepository:
         
         return {
             "period": self._get_period(start_date, end_date),
-            "revenue": data.revenue,
+            "subtotal": data.revenue,
             "tax": data.tax,
             "discounts": data.discounts,
-            "net": data.net,
+            "grand_total": data.net,
             "transactions": data.transactions,
             "profit_available": False,
         }
