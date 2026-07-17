@@ -31,9 +31,9 @@ class SalesService:
 
     def _get_tax_rate(self, db: Session, business_id: uuid.UUID) -> Decimal:
         business = self.business_repo.get_business_with_settings(db, business_id)
-        if business and business.settings:
-            return Decimal(str(business.settings.tax_rate)) / Decimal('100')
-        return Decimal('0.00')
+        settings = business.settings if business else None
+        rate = getattr(settings, 'tax_rate', None) if settings else None
+        return Decimal(str(rate)) / Decimal('100') if rate is not None else Decimal('0.00')
 
     def process_sale(
         self, 
@@ -93,7 +93,8 @@ class SalesService:
         # 2.5. Validate discount against business settings max
         if discount > 0 and subtotal > 0:
             business = self.business_repo.get_business_with_settings(db, business_id)
-            max_discount_pct = float(business.settings.max_discount_percent) if business and business.settings else 10.0
+            settings = business.settings if business else None
+            max_discount_pct = float(getattr(settings, 'max_discount_percent', None) or 10.0)
             discount_pct = (discount / subtotal) * 100
             if discount_pct > max_discount_pct:
                 max_amount = subtotal * Decimal(str(max_discount_pct)) / 100

@@ -406,7 +406,7 @@ class ReceiptService:
             "cash_received": float(sale.cash_received) if sale.cash_received else None,
             "change_given": float(sale.change_given) if sale.change_given else None,
             "date": sale.created_at.strftime('%d/%m/%Y %H:%M') if sale.created_at else "",
-            "currency_symbol": business.settings.currency_symbol if business.settings else "₦",
+            "currency_symbol": getattr(business.settings, 'currency_symbol', None) or "₦" if business.settings else "₦",
             "receipt_footer": branding.get("receipt_footer", "Thank you for your purchase!"),
-            "tax_rate": float(business.settings.tax_rate) if business.settings else 0
+            "tax_rate": float(getattr(business.settings, 'tax_rate', None) or 0) if business.settings else 0
         }

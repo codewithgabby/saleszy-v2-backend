@@ -66,13 +66,13 @@ async def get_my_business(
             "phone": business.phone,
             "is_active": business.is_active,
             "settings": {
-                "timezone": business.settings.timezone if business.settings else "Africa/Lagos",
-                "language": business.settings.language if business.settings else "en",
-                "currency_symbol": business.settings.currency_symbol if business.settings else "₦",
-                "receipt_width": float(business.settings.receipt_width) if business.settings else 80.0,
-                "tax_rate": float(business.settings.tax_rate) if business.settings else 0.0,
-                "branding": business.settings.branding if business.settings else {},
-                "max_discount_percent": float(business.settings.max_discount_percent) if business.settings and business.settings.max_discount_percent else 10.0,
+                "timezone": getattr(business.settings, 'timezone', None) or "Africa/Lagos" if business.settings else "Africa/Lagos",
+                "language": getattr(business.settings, 'language', None) or "en" if business.settings else "en",
+                "currency_symbol": getattr(business.settings, 'currency_symbol', None) or "₦" if business.settings else "₦",
+                "receipt_width": float(getattr(business.settings, 'receipt_width', None) or 80.0) if business.settings else 80.0,
+                "tax_rate": float(getattr(business.settings, 'tax_rate', None) or 0.0) if business.settings else 0.0,
+                "max_discount_percent": float(getattr(business.settings, 'max_discount_percent', None) or 10.0) if business.settings else 10.0,
+                "branding": business.settings.branding if business.settings else {}
             }
         },
         message="Business profile retrieved successfully"
