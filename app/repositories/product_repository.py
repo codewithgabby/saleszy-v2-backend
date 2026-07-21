@@ -86,14 +86,13 @@ class ProductRepository:
         return product
 
     def search_products(self, db: Session, business_id: uuid.UUID, query: str) -> List[Product]:
-        from sqlalchemy.orm import selectinload
-        return (
-            db.query(Product)
-            .options(selectinload(Product.selling_units))
-            .filter(
-                Product.business_id == business_id,
-                Product.is_active == True,
-                Product.name.ilike(f"%{query}%")
+        from sqlalchemy import or_
+        return db.query(Product).filter(
+            Product.business_id == business_id,
+            Product.is_active == True,
+            or_(
+                Product.name.ilike(f"%{query}%"),
+                Product.sku == query,
+                Product.barcode == query,
             )
-            .limit(20).all()
-        )
+        ).limit(20).all()

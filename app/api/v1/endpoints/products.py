@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from decimal import Decimal
+from app.core.response import api_response
 from app.db.database import get_db
 from app.api.deps import get_current_user
 from app.models import User
@@ -130,6 +131,20 @@ async def get_products(
 ):
     products = service.get_products(db, current_user.business_id)
     return [_format_product(p) for p in products]
+
+@router.get("/barcode/{barcode}")
+async def get_product_by_barcode(
+    barcode: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    product = service.repo.get_by_barcode(db, current_user.business_id, barcode)
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    return api_response(
+        data=_format_product(product),
+        message="Product found"
+    )
 
 @router.get("/search", response_model=List[ProductResponse])
 async def search_products(
