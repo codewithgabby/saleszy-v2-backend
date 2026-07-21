@@ -78,6 +78,7 @@ def _format_sale_response(sale) -> dict:
             {
                 "sale_item_id": str(item.id),
                 "product_id": str(item.product_id),
+                "product_name": getattr(item, 'product_name', None) or (item.selling_unit_name or 'Item'),
                 "selling_unit_name": item.selling_unit_name,
                 "quantity": float(item.quantity),
                 "base_unit_quantity_used": float(item.base_unit_quantity_used) if item.base_unit_quantity_used else None,

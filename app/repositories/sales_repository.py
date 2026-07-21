@@ -62,12 +62,20 @@ class SalesRepository:
         return sale
 
     def get_sale_by_id(self, db: Session, sale_id: uuid.UUID) -> Optional[Sale]:
-        return (
+        from app.models import Product
+        sale = (
             db.query(Sale)
             .options(joinedload(Sale.items), joinedload(Sale.customer))
             .filter(Sale.id == sale_id)
             .first()
         )
+        if sale:
+            product_ids = [item.product_id for item in sale.items]
+            products = db.query(Product).filter(Product.id.in_(product_ids)).all()
+            product_map = {str(p.id): p.name for p in products}
+            for item in sale.items:
+                item.product_name = product_map.get(str(item.product_id), None)
+        return sale
 
     def get_sales_list(
         self, 
