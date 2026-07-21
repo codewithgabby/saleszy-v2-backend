@@ -29,6 +29,7 @@ class BusinessSettings(BaseModel):
     tax_rate = Column(DECIMAL(5,2), default=0.00)
     branding = Column(JSON, default={})
     max_discount_percent = Column(DECIMAL(5,2), default=10.00)  # Max discount managers can apply
+    auto_print_receipts = Column(Boolean, default=False)  # Auto-print receipts after cash sales
 
 # --- USER MODEL ---
 class User(BaseModel):
