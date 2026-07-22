@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, Boolean, JSON, DECIMAL, DateTime, Foreign
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
+import sqlalchemy as sa
 
 # --- BUSINESS MODEL ---
 class Business(BaseModel):
@@ -63,12 +64,17 @@ class Product(BaseModel):
     
     name = Column(String(255), nullable=False)
     base_unit = Column(String(50), nullable=False, default="Unit")  # e.g., "Loaf", "Bottle", "Kg", "Egg"
-    sku = Column(String(100), nullable=True, unique=True)
-    barcode = Column(String(100), nullable=True, unique=True)
+    sku = Column(String(100), nullable=True)
+    barcode = Column(String(100), nullable=True)
     price = Column(DECIMAL(12,2), nullable=False)
     image_key = Column(String(255), nullable=True)
     low_stock_threshold = Column(Integer, default=5)
     is_active = Column(Boolean, default=True)
+    
+    __table_args__ = (
+        sa.UniqueConstraint('business_id', 'sku', name='uq_product_business_sku'),
+        sa.UniqueConstraint('business_id', 'barcode', name='uq_product_business_barcode'),
+    )
     
     category = relationship("Category", back_populates="products")
     inventory = relationship("Inventory", back_populates="product", uselist=False)
