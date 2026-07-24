@@ -126,10 +126,16 @@ async def create_product(
 async def get_products(
     skip: int = 0,
     limit: int = 100,
+    status: str = Query("active", pattern="^(active|archived|all)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    products = service.get_products(db, current_user.business_id)
+    products = service.get_products(
+        db=db,
+        business_id=current_user.business_id,
+        status=status
+    )
+
     return [_format_product(p) for p in products]
 
 @router.get("/barcode/{barcode}")

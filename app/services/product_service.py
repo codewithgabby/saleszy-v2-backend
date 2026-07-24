@@ -44,8 +44,17 @@ class ProductService:
             db, business_id, name, price, category_id, sku, barcode, image_key, low_stock_threshold, base_unit
         )
 
-    def get_products(self, db: Session, business_id: UUID):
-        return self.repo.get_all(db, business_id)
+    def get_products(
+        self,
+        db: Session,
+        business_id: UUID,
+        status: str = "active"
+):
+        return self.repo.get_all(
+            db=db,
+            business_id=business_id,
+            status=status
+        )
 
     def search_products(self, db: Session, business_id: UUID, query: str):
         return self.repo.search_products(db, business_id, query)

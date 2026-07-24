@@ -20,17 +20,32 @@ class ProductRepository:
     def get_by_id(self, db: Session, product_id: uuid.UUID) -> Optional[Product]:
         return db.query(Product).filter(Product.id == product_id, Product.is_active == True).first()
 
-    def get_all(self, db: Session, business_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[Product]:
+    def get_all(
+        self,
+        db: Session,
+        business_id: uuid.UUID,
+        status: str = "active",
+        skip: int = 0,
+        limit: int = 100
+) ->     List[Product]:
         from sqlalchemy.orm import selectinload
-        return (
+
+        query = (
             db.query(Product)
             .options(selectinload(Product.selling_units))
-            .filter(
-                Product.business_id == business_id,
-                Product.is_active == True
-            )
-            .offset(skip).limit(limit).all()
+            .filter(Product.business_id == business_id)
         )
+
+        if status == "active":
+            query = query.filter(Product.is_active == True)
+        elif status == "archived":
+            query = query.filter(Product.is_active == False)
+        elif status == "all":
+            pass
+        else:
+            raise ValueError(f"Invalid status: {status}")
+
+        return query.offset(skip).limit(limit).all()
 
     def create_product_with_inventory(
         self, 
