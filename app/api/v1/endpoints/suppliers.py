@@ -16,6 +16,12 @@ class SupplierCreate(BaseModel):
     email: Optional[EmailStr] = None
     address: Optional[str] = None
 
+class SupplierUpdate(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    address: Optional[str] = None
+    is_active: Optional[bool] = None    
 class SupplierResponse(BaseModel):
     id: str
     name: str
@@ -51,10 +57,15 @@ async def create_supplier(
 
 @router.get("/", response_model=List[SupplierResponse])
 async def get_suppliers(
+    status: str = Query("active", pattern="^(active|archived|all)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    suppliers = service.get_suppliers(db, current_user.business_id)
+    suppliers = service.get_suppliers(
+        db,
+        current_user.business_id,
+        status=status
+    )
     return [
         {
             "id": str(s.id),
@@ -85,3 +96,36 @@ async def search_suppliers(
         }
         for s in suppliers
     ]
+
+@router.patch("/{supplier_id}", response_model=SupplierResponse)
+async def update_supplier(
+    supplier_id: str,
+    request: SupplierUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        supplier = service.update_supplier(
+            db,
+            supplier_id,
+            current_user.business_id,
+            request.model_dump(exclude_unset=True)
+        )
+
+        db.commit()
+
+        return {
+            "id": str(supplier.id),
+            "name": supplier.name,
+            "phone": supplier.phone,
+            "email": supplier.email,
+            "address": supplier.address,
+            "is_active": supplier.is_active
+        }
+
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )    

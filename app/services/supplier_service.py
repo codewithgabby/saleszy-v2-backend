@@ -12,8 +12,41 @@ class SupplierService:
             raise ValueError("A supplier with this phone number already exists.")
         return self.repo.create(db, business_id, data)
 
-    def get_suppliers(self, db: Session, business_id: UUID):
-        return self.repo.get_all(db, business_id)
+    def get_suppliers(self, db: Session, business_id: UUID, status: str = "active"):
+        return self.repo.get_all(db, business_id, status=status)
 
     def search_suppliers(self, db: Session, business_id: UUID, query: str):
         return self.repo.search(db, business_id, query)
+
+    def update_supplier(
+        self,
+        db: Session,
+        supplier_id: UUID,
+        business_id: UUID,
+        data: dict
+    ):
+        supplier = self.repo.get_by_id(db, supplier_id)
+
+        if not supplier:
+            raise ValueError("Supplier not found.")
+
+        if supplier.business_id != business_id:
+            raise ValueError("Supplier not found.")
+
+        if "phone" in data and data["phone"] != supplier.phone:
+            existing = self.repo.get_by_phone(
+                db,
+                business_id,
+                data["phone"]
+            )
+
+            if existing and existing.id != supplier.id:
+                raise ValueError(
+                    "A supplier with this phone number already exists."
+                )
+
+        return self.repo.update(
+            db,
+            supplier,
+            data
+        )
