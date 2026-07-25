@@ -62,10 +62,15 @@ async def create_customer(
 
 @router.get("/", response_model=List[CustomerResponse])
 async def get_customers(
+    status: str = Query("active", pattern="^(active|archived|all)$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    customers = service.get_customers(db, current_user.business_id)
+    customers = service.get_customers(
+        db=db,
+        business_id=current_user.business_id,
+        status=status
+    )
     return [
         {
             "id": str(c.id),

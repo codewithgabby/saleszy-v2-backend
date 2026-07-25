@@ -14,11 +14,29 @@ class CustomerRepository:
     def get_by_id(self, db: Session, customer_id: uuid.UUID) -> Optional[Customer]:
         return db.query(Customer).filter(Customer.id == customer_id, Customer.is_active == True).first()
 
-    def get_all(self, db: Session, business_id: uuid.UUID, skip: int = 0, limit: int = 100) -> List[Customer]:
-        return db.query(Customer).filter(
-            Customer.business_id == business_id,
-            Customer.is_active == True
-        ).offset(skip).limit(limit).all()
+    def get_all(
+        self,
+        db: Session,
+        business_id: uuid.UUID,
+        status: str = "active",
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[Customer]:
+
+        query = db.query(Customer).filter(
+            Customer.business_id == business_id
+        )
+
+        if status == "active":
+            query = query.filter(Customer.is_active == True)
+        elif status == "archived":
+            query = query.filter(Customer.is_active == False)
+        elif status == "all":
+            pass
+        else:
+            raise ValueError(f"Invalid status: {status}")
+
+        return query.offset(skip).limit(limit).all()
 
     def create(self, db: Session, business_id: uuid.UUID, data: dict) -> Customer:
         customer = Customer(business_id=business_id, **data)
