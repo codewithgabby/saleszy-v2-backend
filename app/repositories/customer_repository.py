@@ -11,8 +11,18 @@ class CustomerRepository:
             Customer.is_active == True
         ).first()
 
-    def get_by_id(self, db: Session, customer_id: uuid.UUID) -> Optional[Customer]:
-        return db.query(Customer).filter(Customer.id == customer_id, Customer.is_active == True).first()
+    
+    def get_by_id(
+        self,
+        db: Session,
+        customer_id: uuid.UUID
+    ) -> Optional[Customer]:
+        return (
+            db.query(Customer)
+            .filter(Customer.id == customer_id)
+            .first()
+        )
+
 
     def get_all(
         self,
