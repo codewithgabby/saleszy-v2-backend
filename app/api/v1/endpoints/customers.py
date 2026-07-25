@@ -26,6 +26,14 @@ class CustomerResponse(BaseModel):
     notes: Optional[str] = None
     is_active: bool
 
+class CustomerUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None    
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=CustomerResponse)
 async def create_customer(
     request: CustomerCreate,
@@ -90,3 +98,58 @@ async def search_customers(
         }
         for c in customers
     ]
+
+@router.patch("/{customer_id}", response_model=CustomerResponse)
+async def update_customer(
+    customer_id: str,
+    request: CustomerUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    from uuid import UUID
+
+    try:
+        customer_uuid = UUID(customer_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid customer ID"
+        )
+
+    update_data = {
+        k: v for k, v in request.model_dump().items()
+        if v is not None
+    }
+
+    if not update_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update"
+        )
+
+    try:
+        customer = service.update_customer(
+            db,
+            current_user.business_id,
+            customer_uuid,
+            update_data
+        )
+
+        db.commit()
+
+        return {
+            "id": str(customer.id),
+            "full_name": customer.full_name,
+            "phone": customer.phone,
+            "email": customer.email,
+            "address": customer.address,
+            "notes": customer.notes,
+            "is_active": customer.is_active
+        }
+
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )

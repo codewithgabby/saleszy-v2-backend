@@ -17,3 +17,11 @@ class CustomerService:
 
     def search_customers(self, db: Session, business_id: UUID, query: str):
         return self.repo.search(db, business_id, query)
+
+    def update_customer(self, db: Session, business_id: UUID, customer_id: UUID, data: dict):
+        customer = self.repo.get_by_id(db, customer_id)
+
+        if not customer or customer.business_id != business_id:
+            raise ValueError("Customer not found.")
+
+        return self.repo.update(db, customer, data)

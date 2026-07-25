@@ -32,3 +32,10 @@ class CustomerRepository:
             Customer.is_active == True,
             Customer.full_name.ilike(f"%{query}%")
         ).limit(20).all()
+
+    def update(self, db: Session, customer: Customer, data: dict) -> Customer:
+        for key, value in data.items():
+            setattr(customer, key, value)
+
+        db.flush()
+        return customer
