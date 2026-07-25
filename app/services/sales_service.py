@@ -12,6 +12,7 @@ from app.services.audit_service import AuditService
 from app.services.inventory_service import InventoryService, StockMovementType
 from app.services.selling_unit_service import SellingUnitService
 from app.services.shift_service import ShiftService
+from app.core.exceptions import InventoryException
 
 class SalesService:
     def __init__(self):
@@ -75,7 +76,14 @@ class SalesService:
             # Check stock with row lock to prevent overselling
             inventory = self.inventory_repo.get_by_product_id(db, selling_unit.product_id, with_lock=True)
             if not inventory or inventory.available_quantity < base_units_to_deduct:
-                raise ValueError(f"Insufficient stock for product: {product.name}")
+                raise InventoryException(
+        detail="Insufficient stock",
+        code="INSUFFICIENT_STOCK",
+        product_id=str(product.id),
+        selling_unit_id=str(selling_unit.id),
+        product_name=product.name,
+        selling_unit_name=selling_unit.name,
+    )
 
             line_total = unit_price * item["quantity"]
             subtotal += line_total

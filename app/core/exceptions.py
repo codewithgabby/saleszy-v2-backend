@@ -10,8 +10,26 @@ class BusinessRuleException(SaleszyException):
     pass
 
 class InventoryException(SaleszyException):
-    """Used for specific inventory-related failures"""
-    pass
+    """Used for inventory-related failures with optional structured data."""
+
+    def __init__(
+        self,
+        detail: str,
+        *,
+        code: str = "INVENTORY_ERROR",
+        product_id: str | None = None,
+        selling_unit_id: str | None = None,
+        product_name: str | None = None,
+        selling_unit_name: str | None = None,
+        status_code: int = status.HTTP_400_BAD_REQUEST,
+    ):
+        super().__init__(detail=detail, status_code=status_code)
+
+        self.code = code
+        self.product_id = product_id
+        self.selling_unit_id = selling_unit_id
+        self.product_name = product_name
+        self.selling_unit_name = selling_unit_name
 
 class AuthorizationException(SaleszyException):
     """Used when a user tries to perform an unauthorized action"""

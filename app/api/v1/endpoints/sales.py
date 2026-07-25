@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from decimal import Decimal
 from datetime import datetime
+from app.core.exceptions import InventoryException
 from app.db.database import get_db
 from app.api.deps import get_current_user
 from app.models import Sale, User
@@ -125,9 +126,28 @@ async def create_sale(
             data=_format_sale_response(sale),
             message="Sale completed successfully"
         )
+    
+    except InventoryException as e:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=e.status_code,
+            detail={
+                "code": e.code,
+                "message": e.detail,
+                "product_id": e.product_id,
+                "selling_unit_id": e.selling_unit_id,
+                "product_name": e.product_name,
+                "selling_unit_name": e.selling_unit_name,
+            },
+        )
+
     except ValueError as e:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
 
 @router.get("/{sale_id}")
 async def get_sale(
