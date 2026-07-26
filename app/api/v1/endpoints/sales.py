@@ -149,6 +149,44 @@ async def create_sale(
             detail=str(e)
         )
 
+@router.get("/search")
+async def search_sales(
+    q: str = Query(..., min_length=1),
+    limit: int = Query(10, ge=1, le=20),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    sales = service.search_sales(
+        db=db,
+        business_id=current_user.business_id,
+        query=q.strip(),
+        limit=limit,
+    )
+
+    return api_response(
+        data=[_format_sale_response(sale) for sale in sales],
+        message=f"Found {len(sales)} matching sale(s)"
+    )    
+
+
+@router.get("/receipt/{receipt_number}")
+async def get_sale_by_receipt(
+    receipt_number: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    sale = db.query(Sale).filter(
+        Sale.business_id == current_user.business_id,
+        Sale.receipt_number == receipt_number
+    ).first()
+    if not sale:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sale not found")
+    return api_response(
+        data=_format_sale_response(sale),
+        message="Sale retrieved"
+    )
+
+
 @router.get("/{sale_id}")
 async def get_sale(
     sale_id: str,
@@ -170,41 +208,7 @@ async def get_sale(
         message="Sale retrieved successfully"
     ) 
 
-@router.get("/receipt/{receipt_number}")
-async def get_sale_by_receipt(
-    receipt_number: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    sale = db.query(Sale).filter(
-        Sale.business_id == current_user.business_id,
-        Sale.receipt_number == receipt_number
-    ).first()
-    if not sale:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sale not found")
-    return api_response(
-        data=_format_sale_response(sale),
-        message="Sale retrieved"
-    )
 
-@router.get("/search")
-async def search_sales(
-    q: str = Query(..., min_length=1),
-    limit: int = Query(10, ge=1, le=20),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    sales = service.search_sales(
-        db=db,
-        business_id=current_user.business_id,
-        query=q.strip(),
-        limit=limit,
-    )
-
-    return api_response(
-        data=[_format_sale_response(sale) for sale in sales],
-        message=f"Found {len(sales)} matching sale(s)"
-    )
 
 @router.get("/")
 async def list_sales(
