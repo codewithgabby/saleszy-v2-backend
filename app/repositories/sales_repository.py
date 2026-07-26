@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import desc
+from sqlalchemy import desc, or_
 from app.models import Sale, SaleItem
 from typing import Optional, List
 from decimal import Decimal
@@ -215,4 +215,33 @@ class SalesRepository:
             "last_purchase": last_purchase,
         },
         "recent_purchases": recent_purchases,
-    } 
+    }
+
+    def search_sales(
+        self,
+        db: Session,
+        business_id: uuid.UUID,
+        query: str,
+        limit: int = 10,
+    ):
+        from app.models import Customer
+
+        return (
+            db.query(Sale)
+            .outerjoin(Customer, Sale.customer_id == Customer.id)
+            .options(
+                joinedload(Sale.items),
+                joinedload(Sale.customer)
+            )
+            .filter(
+                Sale.business_id == business_id,
+                or_(
+                    Sale.receipt_number.ilike(f"%{query}%"),
+                    Customer.full_name.ilike(f"%{query}%"),
+                    Customer.phone.ilike(f"%{query}%"),
+                )
+            )
+            .order_by(desc(Sale.created_at))
+            .limit(limit)
+            .all()
+        ) 

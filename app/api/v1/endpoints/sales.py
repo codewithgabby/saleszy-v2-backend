@@ -187,6 +187,25 @@ async def get_sale_by_receipt(
         message="Sale retrieved"
     )
 
+@router.get("/search")
+async def search_sales(
+    q: str = Query(..., min_length=1),
+    limit: int = Query(10, ge=1, le=20),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    sales = service.search_sales(
+        db=db,
+        business_id=current_user.business_id,
+        query=q.strip(),
+        limit=limit,
+    )
+
+    return api_response(
+        data=[_format_sale_response(sale) for sale in sales],
+        message=f"Found {len(sales)} matching sale(s)"
+    )
+
 @router.get("/")
 async def list_sales(
     skip: int = Query(0, ge=0),

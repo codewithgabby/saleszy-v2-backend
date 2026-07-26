@@ -208,6 +208,20 @@ class SalesService:
     def get_recent_sales(self, db: Session, business_id: uuid.UUID, limit: int = 20) -> List:
         return self.repo.get_recent_sales(db, business_id, limit)
 
+    def search_sales(
+        self,
+        db: Session,
+        business_id: uuid.UUID,
+        query: str,
+        limit: int = 10,
+    ):
+        return self.repo.search_sales(
+            db=db,
+            business_id=business_id,
+            query=query,
+            limit=limit,
+        )    
+
     def void_sale(self, db: Session, sale_id: uuid.UUID, business_id: uuid.UUID, void_reason: str):
         sale = self.repo.get_sale_by_id(db, sale_id)
         if not sale:
