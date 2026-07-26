@@ -59,7 +59,9 @@ class SalesRepository:
             db.add(sale_item)
 
         db.flush()
-        return sale
+
+        # Reload the sale so every SaleItem is enriched with product_name
+        return self.get_sale_by_id(db, sale.id)
 
     def get_sale_by_id(self, db: Session, sale_id: uuid.UUID) -> Optional[Sale]:
         from app.models import Product

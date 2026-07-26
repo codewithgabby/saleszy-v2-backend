@@ -90,6 +90,7 @@ class SalesService:
             
             processed_items.append({
                 "product_id": selling_unit.product_id,
+                "product_name": product.name,
                 "selling_unit_id": selling_unit.id,
                 "selling_unit_name": selling_unit.name,
                 "quantity": item["quantity"],
