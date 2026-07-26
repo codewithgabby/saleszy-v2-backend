@@ -243,3 +243,15 @@ class SalesService:
 
     def get_payment_summary(self, db: Session, business_id: uuid.UUID, date: datetime | None = None):
         return self.repo.get_payment_summary(db, business_id, date)
+
+    def get_customer_purchase_history(
+        self,
+        db: Session,
+        business_id: uuid.UUID,
+        customer_id: uuid.UUID,
+   ):
+        return self.repo.get_customer_purchase_history(
+            db=db,
+            business_id=business_id,
+            customer_id=customer_id,
+        )    

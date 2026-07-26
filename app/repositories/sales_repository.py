@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc
+from app.api.v1.endpoints import sales
 from app.models import Sale, SaleItem
 from typing import Optional, List
 from decimal import Decimal
@@ -169,3 +170,50 @@ class SalesRepository:
             summary["by_payment_method"][method]["total"] += float(sale.grand_total)
         
         return summary
+
+    def get_customer_purchase_history(
+        self,
+        db: Session,
+        business_id: uuid.UUID,
+        customer_id: uuid.UUID,
+):
+        sales = (
+            db.query(Sale)
+            .filter(
+                Sale.business_id == business_id,
+                Sale.customer_id == customer_id,
+                Sale.status == "completed"
+            )
+            .order_by(desc(Sale.created_at))
+            .all()
+        )
+
+        total_orders = len(sales)
+        total_spent = sum(sale.grand_total for sale in sales)
+
+        last_purchase = (
+            sales[0].created_at
+            if sales
+            else None
+        )
+
+        recent_purchases = [
+            {
+                "sale_id": str(sale.id),
+                "receipt_number": sale.receipt_number,
+                "grand_total": float(sale.grand_total),
+                "payment_method": sale.payment_method,
+                "status": sale.status,
+                "created_at": sale.created_at,
+            }
+            for sale in sales[:20]
+        ]
+
+        return {
+            "summary": {
+            "total_orders": total_orders,
+            "total_spent": float(total_spent),
+            "last_purchase": last_purchase,
+        },
+        "recent_purchases": recent_purchases,
+    } 

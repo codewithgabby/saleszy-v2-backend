@@ -6,9 +6,13 @@ from app.db.database import get_db
 from app.api.deps import get_current_user
 from app.models import User
 from app.services.customer_service import CustomerService
+from app.services.sales_service import SalesService
+from uuid import UUID
 
 router = APIRouter(prefix="/customers", tags=["Customers"])
+
 service = CustomerService()
+sales_service = SalesService()
 
 class CustomerCreate(BaseModel):
     full_name: str
@@ -103,6 +107,28 @@ async def search_customers(
         }
         for c in customers
     ]
+
+@router.get("/{customer_id}/purchase-history")
+async def get_customer_purchase_history(
+    customer_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        customer_uuid = UUID(customer_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid customer ID",
+        )
+
+    history = sales_service.get_customer_purchase_history(
+        db=db,
+        business_id=current_user.business_id,
+        customer_id=customer_uuid,
+    )
+
+    return history    
 
 @router.patch("/{customer_id}", response_model=CustomerResponse)
 async def update_customer(
