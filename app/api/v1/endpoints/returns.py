@@ -12,6 +12,7 @@ from app.services.return_service import ReturnService
 from app.services.shift_service import ShiftService
 from app.repositories.sales_repository import SalesRepository
 from app.core.response import api_response
+from app.api.v1.endpoints.sales import _get_product_name
 
 router = APIRouter(prefix="/returns", tags=["Returns"])
 
@@ -65,6 +66,7 @@ def _format_return(r, sale=None) -> dict:
         "items": [
             {
                 "sale_item_id": str(i.sale_item_id),
+                "product_name": _get_product_name(i.product_id),
                 "selling_unit_name": i.selling_unit_name,
                 "quantity": float(i.quantity),
                 "refund_amount": float(i.refund_amount),
