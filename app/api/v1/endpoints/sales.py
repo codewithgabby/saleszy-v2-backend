@@ -57,6 +57,25 @@ class SaleResponse(BaseModel):
     voided_at: Optional[str] = None
     created_at: str
 
+# Product name cache for sale responses
+_product_name_cache = {}
+
+def _get_product_name(product_id):
+    from uuid import UUID
+    pid = UUID(product_id) if isinstance(product_id, str) else product_id
+    if pid in _product_name_cache:
+        return _product_name_cache[pid]
+    from app.models import Product
+    from app.db.database import SessionLocal
+    db = SessionLocal()
+    try:
+        product = db.query(Product).filter(Product.id == pid).first()
+        name = product.name if product else "Product"
+        _product_name_cache[pid] = name
+        return name
+    finally:
+        db.close()
+
 # --- Helper Functions ---
 def _format_sale_response(sale) -> dict:
     return {
@@ -79,7 +98,7 @@ def _format_sale_response(sale) -> dict:
             {
                 "sale_item_id": str(item.id),
                 "product_id": str(item.product_id),
-                "product_name": getattr(item, 'product_name', None) or (item.selling_unit_name or 'Item'),
+                "product_name": _get_product_name(item.product_id),
                 "selling_unit_name": item.selling_unit_name,
                 "quantity": float(item.quantity),
                 "base_unit_quantity_used": float(item.base_unit_quantity_used) if item.base_unit_quantity_used else None,
