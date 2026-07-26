@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc
-from app.api.v1.endpoints import sales
 from app.models import Sale, SaleItem
 from typing import Optional, List
 from decimal import Decimal
