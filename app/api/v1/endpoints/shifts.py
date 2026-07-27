@@ -74,6 +74,7 @@ async def get_current_shift(
     return api_response(
         data={
             "shift": _format_shift(summary["shift"]),
+            "cashier": summary["cashier"],
             "sales_summary": {
                 k: float(v) if isinstance(v, Decimal) else v
                 for k, v in summary["sales_summary"].items()
@@ -113,7 +114,34 @@ async def list_shifts(
 ):
     uid = UUID(user_id) if user_id else None
     shifts = service.get_shifts(db, current_user.business_id, uid, skip, limit)
-    return api_response(data=[_format_shift(s) for s in shifts], message=f"Retrieved {len(shifts)} shifts")
+    return api_response(
+    data=[
+        {
+            **_format_shift(s),
+            "cashier": {
+                "id": str(s.user_id),
+                "name": (
+                    db.query(User)
+                    .filter(User.id == s.user_id)
+                    .first()
+                    .full_name
+                    if db.query(User).filter(User.id == s.user_id).first()
+                    else "Unknown"
+                ),
+                "role": (
+                    db.query(User)
+                    .filter(User.id == s.user_id)
+                    .first()
+                    .role
+                    if db.query(User).filter(User.id == s.user_id).first()
+                    else None
+                )
+            }
+        }
+        for s in shifts
+    ],
+    message=f"Retrieved {len(shifts)} shifts"
+)
 
 
 @router.get("/{shift_id}")
@@ -128,6 +156,7 @@ async def get_shift_detail(
         return api_response(
             data={
                 "shift": _format_shift(summary["shift"]),
+                "cashier": summary["cashier"],
                 "sales_summary": {
                     k: float(v) if isinstance(v, Decimal) else v
                     for k, v in summary["sales_summary"].items()

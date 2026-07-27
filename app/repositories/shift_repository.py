@@ -1,6 +1,6 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
-from app.models import Shift, ShiftEvent, Sale, Return
+from app.models import Shift, ShiftEvent, Sale, Return, User
 from typing import Optional, List
 from decimal import Decimal
 import uuid
@@ -97,11 +97,31 @@ class ShiftRepository:
             shift.total_transactions += 1
             db.flush()
     
-    def get_shifts(self, db: Session, business_id: uuid.UUID, user_id: Optional[uuid.UUID] = None, skip: int = 0, limit: int = 20) -> List[Shift]:
-        query = db.query(Shift).filter(Shift.business_id == business_id)
+    def get_shifts(
+        self,
+        db: Session,
+        business_id: uuid.UUID,
+        user_id: Optional[uuid.UUID] = None,
+        skip: int = 0,
+        limit: int = 20
+    ) -> List[Shift]:
+
+        query = (
+            db.query(Shift)
+            .options(joinedload(Shift.user))
+            .filter(Shift.business_id == business_id)
+        )
+
         if user_id:
             query = query.filter(Shift.user_id == user_id)
-        return query.order_by(Shift.opened_at.desc()).offset(skip).limit(limit).all()
+
+        return (
+            query
+            .order_by(Shift.opened_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
     
     def get_shift_events(self, db: Session, shift_id: uuid.UUID) -> List[ShiftEvent]:
         return db.query(ShiftEvent).filter(ShiftEvent.shift_id == shift_id).order_by(ShiftEvent.created_at.asc()).all()
@@ -111,6 +131,12 @@ class ShiftRepository:
 
         if not shift:
             return None
+
+        cashier = (
+            db.query(User)
+            .filter(User.id == shift.user_id)
+            .first()
+        )
 
     # -----------------------------
     # Sales Summary
@@ -215,6 +241,12 @@ class ShiftRepository:
 
         return {
             "shift": shift,
+
+            "cashier": {
+                "id": str(cashier.id) if cashier else None,
+                "name": cashier.full_name if cashier else "Unknown",
+                "role": cashier.role if cashier else None,
+            },
 
         "sales_summary": {
             "cash_sales": cash_sales,
