@@ -113,7 +113,7 @@ async def list_shifts(
     db: Session = Depends(get_db)
 ):
     uid = UUID(user_id) if user_id else None
-    shifts = service.get_shifts(db, current_user.business_id, uid, skip, limit)
+    shifts = service.get_shifts(db=db, business_id=current_user.business_id, current_user=current_user, user_id=uid, skip=skip, limit=limit)
     return api_response(
     data=[
         {
@@ -151,7 +151,11 @@ async def get_shift_detail(
     db: Session = Depends(get_db)
 ):
     try:
-        summary, events = service.get_shift_detail(db, UUID(shift_id))
+        summary, events = service.get_shift_detail(
+            db=db,
+            shift_id=UUID(shift_id),
+            current_user=current_user,
+        )
 
         return api_response(
             data={
@@ -177,6 +181,12 @@ async def get_shift_detail(
             },
             message="Shift details"
         )
+
+    except PermissionError as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e)
+        )    
 
     except ValueError as e:
         raise HTTPException(
