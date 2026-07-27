@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models import Shift, ShiftEvent, Sale, Return, User
 from typing import Optional, List
@@ -108,7 +108,6 @@ class ShiftRepository:
 
         query = (
             db.query(Shift)
-            .options(joinedload(Shift.user))
             .filter(Shift.business_id == business_id)
         )
 
