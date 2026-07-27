@@ -103,7 +103,7 @@ async def close_shift(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/")
+@router.get("")
 async def list_shifts(
     user_id: Optional[str] = None,
     skip: int = Query(0, ge=0),
