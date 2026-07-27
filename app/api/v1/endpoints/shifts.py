@@ -62,9 +62,29 @@ async def get_current_shift(
     db: Session = Depends(get_db)
 ):
     shift = service.get_current_shift(db, current_user.id)
+
     if not shift:
-        return api_response(data=None, message="No open shift")
-    return api_response(data=_format_shift(shift), message="Current shift")
+        return api_response(
+            data=None,
+            message="No open shift"
+        )
+
+    summary = service.get_shift_summary(db, shift.id)
+
+    return api_response(
+        data={
+            "shift": _format_shift(summary["shift"]),
+            "sales_summary": {
+                k: float(v) if isinstance(v, Decimal) else v
+                for k, v in summary["sales_summary"].items()
+            },
+            "cash_summary": {
+                k: float(v) if isinstance(v, Decimal) else v
+                for k, v in summary["cash_summary"].items()
+            }
+        },
+        message="Current shift"
+    )
 
 
 @router.post("/{shift_id}/close")
@@ -103,13 +123,34 @@ async def get_shift_detail(
     db: Session = Depends(get_db)
 ):
     try:
-        shift, events = service.get_shift_detail(db, UUID(shift_id))
-        return api_response(data={
-            "shift": _format_shift(shift),
-            "events": [
-                {"event_type": e.event_type, "amount": float(e.amount) if e.amount else None, "notes": e.notes, "created_at": e.created_at.isoformat() if e.created_at else None}
-                for e in events
-            ]
-        }, message="Shift details")
+        summary, events = service.get_shift_detail(db, UUID(shift_id))
+
+        return api_response(
+            data={
+                "shift": _format_shift(summary["shift"]),
+                "sales_summary": {
+                    k: float(v) if isinstance(v, Decimal) else v
+                    for k, v in summary["sales_summary"].items()
+                },
+                "cash_summary": {
+                    k: float(v) if isinstance(v, Decimal) else v
+                    for k, v in summary["cash_summary"].items()
+                },
+                "events": [
+                    {
+                        "event_type": e.event_type,
+                        "amount": float(e.amount) if e.amount else None,
+                        "notes": e.notes,
+                        "created_at": e.created_at.isoformat() if e.created_at else None
+                    }
+                    for e in events
+                ]
+            },
+            message="Shift details"
+        )
+
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
+        )

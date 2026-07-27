@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from app.models import Shift, ShiftEvent
+from sqlalchemy import func
+from app.models import Shift, ShiftEvent, Sale, Return
 from typing import Optional, List
 from decimal import Decimal
 import uuid
@@ -41,8 +42,35 @@ class ShiftRepository:
         return shift
     
     def close_shift(self, db: Session, shift: Shift, closed_by: uuid.UUID, actual_cash: Decimal) -> Shift:
-        # Calculate expected cash
-        expected = shift.opening_cash + shift.total_sales - shift.total_refunds
+        
+        # Calculate cash sales
+        cash_sales = (
+            db.query(func.coalesce(func.sum(Sale.grand_total), 0))
+            .filter(
+                Sale.shift_id == shift.id,
+                Sale.status == "completed",
+                Sale.payment_method == "cash",
+            )
+            .scalar()
+        )
+
+        # Calculate cash refunds
+        cash_refunds = (
+            db.query(func.coalesce(func.sum(Return.total_refund), 0))
+            .filter(
+                Return.shift_id == shift.id,
+                Return.status == "COMPLETED",
+                Return.refund_method == "CASH",
+            )
+            .scalar()
+        )
+
+        expected = (
+            shift.opening_cash
+            + cash_sales
+            - cash_refunds
+        )
+
         shift.expected_cash = expected
         shift.actual_cash = actual_cash
         shift.cash_variance = actual_cash - expected
@@ -78,3 +106,138 @@ class ShiftRepository:
     
     def get_shift_events(self, db: Session, shift_id: uuid.UUID) -> List[ShiftEvent]:
         return db.query(ShiftEvent).filter(ShiftEvent.shift_id == shift_id).order_by(ShiftEvent.created_at.asc()).all()
+
+    def get_shift_summary(self, db: Session, shift_id: uuid.UUID):
+        shift = self.get_shift_by_id(db, shift_id)
+
+        if not shift:
+            return None
+
+    # -----------------------------
+    # Sales Summary
+    # -----------------------------
+        cash_sales = (
+            db.query(func.coalesce(func.sum(Sale.grand_total), 0))
+            .filter(
+                Sale.shift_id == shift.id,
+                Sale.status == "completed",
+                Sale.payment_method == "cash",
+            )
+            .scalar()
+        )
+
+        transfer_sales = (
+            db.query(func.coalesce(func.sum(Sale.grand_total), 0))
+            .filter(
+                Sale.shift_id == shift.id,
+                Sale.status == "completed",
+                Sale.payment_method == "transfer",
+            )
+            .scalar()
+        )
+
+        pos_sales = (
+            db.query(func.coalesce(func.sum(Sale.grand_total), 0))
+            .filter(
+                Sale.shift_id == shift.id,
+                Sale.status == "completed",
+                Sale.payment_method == "pos",
+            )
+            .scalar()
+        )
+
+        cash_transactions = (
+            db.query(func.count(Sale.id))
+            .filter(
+                Sale.shift_id == shift.id,
+                Sale.status == "completed",
+                Sale.payment_method == "cash",
+            )
+            .scalar()
+        )
+
+        transfer_transactions = (
+            db.query(func.count(Sale.id))
+            .filter(
+                Sale.shift_id == shift.id,
+                Sale.status == "completed",
+                Sale.payment_method == "transfer",
+            )
+            .scalar()
+        )
+
+        pos_transactions = (
+            db.query(func.count(Sale.id))
+            .filter(
+                Sale.shift_id == shift.id,
+                Sale.status == "completed",
+                Sale.payment_method == "pos",
+            )
+            .scalar()
+        )
+
+    # -----------------------------
+    # Refund Summary
+    # -----------------------------
+        cash_refunds = (
+            db.query(func.coalesce(func.sum(Return.total_refund), 0))
+            .filter(
+                Return.shift_id == shift.id,
+                Return.status == "COMPLETED",
+                Return.refund_method == "CASH",
+            )
+            .scalar()
+        )
+
+        transfer_refunds = (
+            db.query(func.coalesce(func.sum(Return.total_refund), 0))
+            .filter(
+                Return.shift_id == shift.id,
+                Return.status == "COMPLETED",
+                Return.refund_method == "TRANSFER",
+            )
+            .scalar()
+        )
+
+        pos_refunds = (
+            db.query(func.coalesce(func.sum(Return.total_refund), 0))
+            .filter(
+                Return.shift_id == shift.id,
+                Return.status == "COMPLETED",
+                Return.refund_method == "POS",
+            )
+            .scalar()
+        )
+
+        cash_in_drawer = (
+            shift.opening_cash
+            + cash_sales
+            - cash_refunds
+        )
+
+        return {
+            "shift": shift,
+
+        "sales_summary": {
+            "cash_sales": cash_sales,
+            "transfer_sales": transfer_sales,
+            "pos_sales": pos_sales,
+            "total_sales": cash_sales + transfer_sales + pos_sales,
+
+            "cash_transactions": cash_transactions,
+            "transfer_transactions": transfer_transactions,
+            "pos_transactions": pos_transactions,
+
+            "total_transactions":
+                cash_transactions
+                + transfer_transactions
+                + pos_transactions,
+        },
+
+        "cash_summary": {
+            "opening_cash": shift.opening_cash,
+            "cash_sales": cash_sales,
+            "cash_refunds": cash_refunds,
+            "cash_in_drawer": cash_in_drawer,
+        }
+    }

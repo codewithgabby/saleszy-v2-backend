@@ -35,10 +35,22 @@ class ShiftService:
     
     def get_shift_detail(self, db: Session, shift_id: uuid.UUID):
         shift = self.repo.get_shift_by_id(db, shift_id)
+
         if not shift:
             raise ValueError("Shift not found")
+
+        summary = self.repo.get_shift_summary(db, shift_id)
         events = self.repo.get_shift_events(db, shift_id)
+
         return shift, events
+
+    def get_shift_summary(self, db: Session, shift_id: uuid.UUID):
+        summary = self.repo.get_shift_summary(db, shift_id)
+
+        if not summary:
+            raise ValueError("Shift not found")
+
+        return summary
 
     def update_shift_totals(self, db: Session, shift_id: uuid.UUID, sale_amount: Decimal):
         return self.repo.update_shift_totals(db, shift_id, sale_amount)    
