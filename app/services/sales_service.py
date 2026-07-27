@@ -144,6 +144,7 @@ class SalesService:
             processed_items,
             discount_type,
             discount_reason,
+            shift.id,
         )
 
         # 6. Deduct inventory through centralized service (with stock ledger)

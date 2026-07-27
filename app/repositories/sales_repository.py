@@ -24,12 +24,14 @@ class SalesRepository:
         items_data: list,
         discount_type: str = None,
         discount_reason: str = None,
+        shift_id: uuid.UUID | None = None,
     ) -> Sale:
         # 1. Create the Sale record
         sale = Sale(
             business_id=business_id,
             cashier_id=cashier_id,
             customer_id=customer_id,
+            shift_id=shift_id,
             subtotal=subtotal,
             tax=tax,
             discount=discount,
