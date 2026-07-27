@@ -42,7 +42,7 @@ class ShiftService:
         summary = self.repo.get_shift_summary(db, shift_id)
         events = self.repo.get_shift_events(db, shift_id)
 
-        return shift, events
+        return summary, events
 
     def get_shift_summary(self, db: Session, shift_id: uuid.UUID):
         summary = self.repo.get_shift_summary(db, shift_id)
