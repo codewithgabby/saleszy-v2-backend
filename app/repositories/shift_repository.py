@@ -68,7 +68,6 @@ class ShiftRepository:
         expected = (
             shift.opening_cash
             + cash_sales
-            - cash_refunds
         )
 
         shift.expected_cash = expected
@@ -212,7 +211,6 @@ class ShiftRepository:
         cash_in_drawer = (
             shift.opening_cash
             + cash_sales
-            - cash_refunds
         )
 
         return {
