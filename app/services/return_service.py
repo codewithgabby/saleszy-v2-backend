@@ -142,9 +142,20 @@ class ReturnService:
             sale.status = "fully_returned"
         
         # 9. Update shift totals
-        shift = self.shift_service.get_current_shift(db, user_id) if not shift_id else None
-        if shift:
-            self.shift_service.repo.update_shift_totals(db, shift.id, -total_refund)
+        if shift_id:
+            self.shift_service.repo.update_shift_totals(
+                db,
+                shift_id,
+                -total_refund
+            )
+        else:
+            shift = self.shift_service.get_current_shift(db, user_id)
+            if shift:
+                self.shift_service.repo.update_shift_totals(
+                    db,
+                    shift.id,
+                    -total_refund
+                )
         
         return ret
     
