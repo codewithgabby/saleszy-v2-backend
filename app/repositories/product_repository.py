@@ -17,6 +17,18 @@ class ProductRepository:
             Product.barcode == barcode
         ).first()
 
+
+    def get_by_name(self, db: Session, business_id: uuid.UUID, name: str) -> Optional[Product]:
+        return (
+            db.query(Product)
+            .filter(
+                Product.business_id == business_id,
+                Product.is_active == True,
+                Product.name.ilike(name)
+            )
+            .first()
+        )
+
     
     def get_by_id(self, db: Session, product_id: uuid.UUID) -> Optional[Product]:
         return (

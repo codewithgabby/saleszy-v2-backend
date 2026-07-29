@@ -22,11 +22,18 @@ class ProductService:
         image_key: str | None = None,
         low_stock_threshold: int = 5
     ):
+        name = " ".join(name.strip().split())
+
         # Validate Category exists if provided
         if category_id:
             category = self.category_repo.get_by_id(db, category_id)
             if not category:
                 raise ValueError("Category does not exist.")
+
+        # Check for duplicate Product Name
+        existing = self.repo.get_by_name(db, business_id, name)
+        if existing:
+            raise ValueError("A product with this name already exists.")
 
         # Check for duplicate SKU
         if sku:
