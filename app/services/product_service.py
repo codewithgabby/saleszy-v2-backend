@@ -33,7 +33,11 @@ class ProductService:
         # Check for duplicate Product Name
         existing = self.repo.get_by_name(db, business_id, name)
         if existing:
-            raise ValueError("A product with this name already exists.")
+            raise ValueError(
+                 f'Product "{existing.name}" already exists.\n'
+                 "Please edit the existing product instead of creating another one."
+            )
+
 
         # Check for duplicate SKU
         if sku:
