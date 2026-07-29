@@ -43,13 +43,17 @@ class ProductService:
         if sku:
             existing = self.repo.get_by_sku(db, business_id, sku)
             if existing:
-                raise ValueError("A product with this SKU already exists.")
+                raise ValueError(
+                    f'SKU "{sku}" already exists.'
+                )
 
         # Check for duplicate Barcode
         if barcode:
             existing = self.repo.get_by_barcode(db, business_id, barcode)
             if existing:
-                raise ValueError("A product with this Barcode already exists.")
+                raise ValueError(
+                    f'Barcode "{barcode}" already exists.'
+                )
 
         return self.repo.create_product_with_inventory(
             db, business_id, name, price, category_id, sku, barcode, image_key, low_stock_threshold, base_unit
