@@ -17,8 +17,30 @@ class CategoryService:
     def get_categories(self, db: Session, business_id: UUID):
         return self.repo.get_all(db, business_id)
 
-    def delete_category(self, db: Session, category_id: UUID):
+    def update_category(self, db: Session, category_id: UUID, name: str):
         category = self.repo.get_by_id(db, category_id)
+
         if not category:
             raise ValueError("Category not found.")
+
+        existing = self.repo.get_by_name(
+            db,
+            category.business_id,
+            name
+        )
+
+        if existing and existing.id != category.id:
+            raise ValueError("A category with this name already exists.")
+
+        category.name = name
+
+        return category
+
+
+    def delete_category(self, db: Session, category_id: UUID):
+        category = self.repo.get_by_id(db, category_id)
+
+        if not category:
+            raise ValueError("Category not found.")
+
         self.repo.delete(db, category)

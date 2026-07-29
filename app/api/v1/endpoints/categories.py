@@ -14,6 +14,8 @@ service = CategoryService()
 class CategoryCreate(BaseModel):
     name: str
 
+class CategoryUpdate(BaseModel):
+    name: str    
 class CategoryResponse(BaseModel):
     id: str
     name: str
@@ -44,6 +46,36 @@ async def get_categories(
         {"id": str(c.id), "name": c.name, "is_active": c.is_active}
         for c in categories
     ]
+
+
+@router.patch("/{category_id}", response_model=CategoryResponse)
+async def update_category(
+    category_id: str,
+    request: CategoryUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        category = service.update_category(
+            db,
+            category_id,
+            request.name
+        )
+
+        db.commit()
+
+        return {
+            "id": str(category.id),
+            "name": category.name,
+            "is_active": category.is_active
+        }
+
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(
