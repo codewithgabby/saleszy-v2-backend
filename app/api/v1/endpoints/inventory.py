@@ -7,10 +7,12 @@ from app.db.database import get_db
 from app.api.deps import get_current_user
 from app.models import User
 from app.services.restock_service import RestockService
+from app.services.inventory_service import InventoryService
 from app.core.response import api_response
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
 restock_service = RestockService()
+inventory_service = InventoryService()
 
 class CreateRestockRequest(BaseModel):
     product_id: str
@@ -75,3 +77,31 @@ async def create_restock(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+@router.get("/stock-movements/{product_id}")
+async def get_stock_movements(
+    product_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    movements = inventory_service.get_movements(
+        db=db,
+        business_id=current_user.business_id,
+        product_id=product_id
+    )
+
+    return api_response(
+        data=[
+            {
+                "id": str(m.id),
+                "movement_type": m.movement_type,
+                "quantity": float(m.quantity),
+                "quantity_after": float(m.quantity_after),
+                "notes": m.notes,
+                "reference_type": m.reference_type,
+                "reference_id": str(m.reference_id) if m.reference_id else None,
+                "created_at": m.created_at.isoformat()
+            }
+            for m in movements
+        ]
+    )    
