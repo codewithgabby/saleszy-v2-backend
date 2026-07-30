@@ -6,48 +6,72 @@ from uuid import UUID
 from app.db.database import get_db
 from app.api.deps import get_current_user
 from app.models import User
-from app.services.inventory_service import InventoryService, StockMovementType
+from app.services.restock_service import RestockService
 from app.core.response import api_response
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
-inventory_service = InventoryService()
+restock_service = RestockService()
 
-class AddStockRequest(BaseModel):
+class CreateRestockRequest(BaseModel):
     product_id: str
+    supplier_id: str | None = None
     quantity: Decimal
+    buying_cost: Decimal
+    reference_number: str | None = None
+    notes: str | None = None
 
 
-@router.post("/add-stock", status_code=status.HTTP_200_OK)
-async def add_stock(
-    request: AddStockRequest,
+@router.post("/restock", status_code=status.HTTP_201_CREATED)
+async def create_restock(
+    request: CreateRestockRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     try:
         product_uuid = UUID(request.product_id)
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid product ID")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid product ID"
+        )
+
+    supplier_uuid = None
+
+    if request.supplier_id:
+        try:
+            supplier_uuid = UUID(request.supplier_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid supplier ID"
+            )
 
     try:
-        inventory = inventory_service.adjust_stock(
-            db,
-            current_user.business_id,
-            product_uuid,
-            current_user.id,
-            request.quantity,
-            StockMovementType.RESTOCK,
-            reference_type="inventory",
-            notes="Manual stock addition"
+        restock = restock_service.create_restock(
+            db=db,
+            business_id=current_user.business_id,
+            product_id=product_uuid,
+            supplier_id=supplier_uuid,
+            quantity=request.quantity,
+            buying_cost=request.buying_cost,
+            reference_number=request.reference_number,
+            notes=request.notes,
+            user_id=current_user.id
         )
+
         db.commit()
-        
+
         return api_response(
             data={
-                "product_id": str(product_uuid),
-                "new_available_quantity": float(inventory.available_quantity)
+                "restock_id": str(restock.id),
+                "product_id": str(product_uuid)
             },
-            message=f"Successfully added {request.quantity} stock"
+            message="Inventory restocked successfully."
         )
+
     except ValueError as e:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )

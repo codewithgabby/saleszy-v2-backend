@@ -131,6 +131,53 @@ class StockMovement(BaseModel):
     reference_id = Column(UUID(as_uuid=True), nullable=True)  # ID of related sale, etc.
     notes = Column(String(255), nullable=True)
 
+# --- RESTOCK MODEL ---
+class Restock(BaseModel):
+    __tablename__ = "restocks"
+
+    business_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+
+    product_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("products.id"),
+        nullable=False
+    )
+
+    supplier_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("suppliers.id"),
+        nullable=True
+    )
+
+    received_quantity = Column(
+        DECIMAL(18,6),
+        nullable=False
+    )
+
+    buying_cost = Column(
+        DECIMAL(12,2),
+        nullable=False
+    )
+
+    reference_number = Column(
+        String(100),
+        nullable=True
+    )
+
+    notes = Column(
+        String(500),
+        nullable=True
+    )
+
+    received_by_user_id = Column(
+        UUID(as_uuid=True),
+        nullable=False
+    )
+
+    product = relationship("Product")
+    supplier = relationship("Supplier")
+
+
 # --- CUSTOMER MODEL ---
 class Customer(BaseModel):
     __tablename__ = "customers"
