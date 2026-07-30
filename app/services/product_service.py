@@ -17,6 +17,7 @@ class ProductService:
         price: Decimal,
         base_unit: str = "Unit",
         category_id: UUID | None = None,
+        supplier_id: UUID | None = None,
         sku: str | None = None,
         barcode: str | None = None,
         image_key: str | None = None,
@@ -56,8 +57,18 @@ class ProductService:
                 )
 
         return self.repo.create_product_with_inventory(
-            db, business_id, name, price, category_id, sku, barcode, image_key, low_stock_threshold, base_unit
-        )
+    db,
+    business_id,
+    name,
+    price,
+    category_id,
+    supplier_id,
+    sku,
+    barcode,
+    image_key,
+    low_stock_threshold,
+    base_unit,
+)
 
     def get_products(
         self,

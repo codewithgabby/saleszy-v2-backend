@@ -49,7 +49,11 @@ class ProductRepository:
 
         query = (
             db.query(Product)
-            .options(selectinload(Product.selling_units))
+            .options(
+                selectinload(Product.selling_units),
+                selectinload(Product.category),
+                selectinload(Product.supplier),
+            )
             .filter(Product.business_id == business_id)
         )
 
@@ -71,6 +75,7 @@ class ProductRepository:
         name: str, 
         price: Decimal,
         category_id: uuid.UUID | None = None,
+        supplier_id: uuid.UUID | None = None,
         sku: str | None = None,
         barcode: str | None = None,
         image_key: str | None = None,
@@ -84,6 +89,7 @@ class ProductRepository:
             base_unit=base_unit,
             price=price,
             category_id=category_id,
+            supplier_id=supplier_id,
             sku=sku,
             barcode=barcode,
             image_key=image_key,

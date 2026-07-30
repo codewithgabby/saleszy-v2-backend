@@ -60,7 +60,13 @@ class Product(BaseModel):
     
     business_id = Column(UUID(as_uuid=True), nullable=False)
     category_id = Column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True)
-    supplier_id = Column(UUID(as_uuid=True), nullable=True)
+    supplier_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("suppliers.id"),
+        nullable=True
+    )
+
+    supplier = relationship("Supplier")
     
     name = Column(String(255), nullable=False)
     base_unit = Column(String(50), nullable=False, default="Unit")  # e.g., "Loaf", "Bottle", "Kg", "Egg"

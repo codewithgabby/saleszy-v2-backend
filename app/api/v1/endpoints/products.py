@@ -18,6 +18,7 @@ class ProductCreate(BaseModel):
     price: Decimal = Field(..., decimal_places=2)
     base_unit: str = "Unit"
     category_id: Optional[str] = None
+    supplier_id: Optional[str] = None
     sku: Optional[str] = None
     barcode: Optional[str] = None
     image_key: Optional[str] = None
@@ -39,6 +40,8 @@ class ProductResponse(BaseModel):
     base_unit: str = "Unit"
     category_id: Optional[str] = None
     category_name: Optional[str] = None
+    supplier_id: Optional[str] = None
+    supplier_name: Optional[str] = None
     sku: Optional[str] = None
     barcode: Optional[str] = None
     image_key: Optional[str] = None
@@ -75,6 +78,10 @@ def _format_product(p) -> dict:
         "base_unit": p.base_unit,
         "category_id": str(p.category_id) if p.category_id else None,
         "category_name": p.category.name if p.category else None,
+
+        "supplier_id": str(p.supplier_id) if p.supplier_id else None,
+        "supplier_name": p.supplier.name if p.supplier else None,
+
         "sku": p.sku,
         "barcode": p.barcode,
         "image_key": p.image_key,
@@ -111,6 +118,7 @@ async def create_product(
             request.price,
             base_unit=request.base_unit,
             category_id=request.category_id,
+            supplier_id=request.supplier_id,
             sku=request.sku,
             barcode=request.barcode,
             image_key=request.image_key,
