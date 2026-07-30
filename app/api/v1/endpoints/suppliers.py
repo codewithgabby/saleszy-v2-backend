@@ -15,19 +15,23 @@ class SupplierCreate(BaseModel):
     phone: str
     email: Optional[EmailStr] = None
     address: Optional[str] = None
+    notes: Optional[str] = None
 
 class SupplierUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[EmailStr] = None
     address: Optional[str] = None
+    notes: Optional[str] = None
     is_active: Optional[bool] = None    
+
 class SupplierResponse(BaseModel):
     id: str
     name: str
     phone: str
     email: Optional[str] = None
     address: Optional[str] = None
+    notes: Optional[str] = None
     is_active: bool
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=SupplierResponse)
@@ -49,6 +53,7 @@ async def create_supplier(
             "phone": supplier.phone,
             "email": supplier.email,
             "address": supplier.address,
+            "notes": supplier.notes,
             "is_active": supplier.is_active
         }
     except ValueError as e:
@@ -73,6 +78,7 @@ async def get_suppliers(
             "phone": s.phone,
             "email": s.email,
             "address": s.address,
+            "notes": s.notes,
             "is_active": s.is_active
         }
         for s in suppliers
@@ -92,6 +98,7 @@ async def search_suppliers(
             "phone": s.phone,
             "email": s.email,
             "address": s.address,
+            "notes": s.notes,
             "is_active": s.is_active
         }
         for s in suppliers
@@ -120,6 +127,7 @@ async def update_supplier(
             "phone": supplier.phone,
             "email": supplier.email,
             "address": supplier.address,
+            "notes": supplier.notes,
             "is_active": supplier.is_active
         }
 
@@ -128,4 +136,27 @@ async def update_supplier(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
-        )    
+        )
+
+@router.delete("/{supplier_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_supplier(
+    supplier_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        service.delete_supplier(
+            db,
+            supplier_id,
+            current_user.business_id
+        )
+
+        db.commit()
+
+    except ValueError as e:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )        

@@ -1,4 +1,3 @@
-from alembic.util import status
 from sqlalchemy.orm import Session
 from app.models import Supplier
 from typing import List, Optional
@@ -11,6 +10,18 @@ class SupplierRepository:
             Supplier.phone == phone,
             Supplier.is_active == True
         ).first()
+
+
+    def get_by_name(self, db: Session, business_id: uuid.UUID, name: str) -> Optional[Supplier]:
+        return (
+            db.query(Supplier)
+            .filter(
+                Supplier.business_id == business_id,
+                Supplier.is_active == True,
+                Supplier.name.ilike(name)
+            )
+            .first()
+        )
 
     def get_by_id(self, db: Session, supplier_id: uuid.UUID) -> Optional[Supplier]:
         return (
@@ -68,6 +79,18 @@ class SupplierRepository:
 
         for key, value in data.items():
             setattr(supplier, key, value)
+
+        db.flush()
+
+        return supplier
+
+    def delete(
+        self,
+        db: Session,
+        supplier: Supplier
+    ) -> Supplier:
+
+        supplier.is_active = False
 
         db.flush()
 

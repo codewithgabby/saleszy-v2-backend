@@ -146,6 +146,7 @@ class Supplier(BaseModel):
     phone = Column(String(20), nullable=False)
     email = Column(String(255), nullable=True)
     address = Column(String(255), nullable=True)
+    notes = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)    
 
 # --- SALE MODEL ---
