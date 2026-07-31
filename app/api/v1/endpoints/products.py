@@ -14,7 +14,7 @@ service = ProductService()
 
 # --- Schemas ---
 class ProductCreate(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, max_length=255)
     price: Decimal = Field(..., decimal_places=2, gt=0)
     base_unit: str = "Unit"
     category_id: Optional[str] = None
