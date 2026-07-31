@@ -42,6 +42,7 @@ class SettingsUpdateRequest(BaseModel):
     receipt_width: Optional[float] = Field(None, ge=40, le=120)
     timezone: Optional[str] = None
     language: Optional[str] = Field(None, min_length=2, max_length=10)
+    auto_print_receipts: Optional[bool] = None
     branding: Optional[BrandingSchema] = None
 
 # --- Routes ---
@@ -72,6 +73,7 @@ async def get_my_business(
                 "receipt_width": float(getattr(business.settings, 'receipt_width', None) or 80.0) if business.settings else 80.0,
                 "tax_rate": float(getattr(business.settings, 'tax_rate', None) or 0.0) if business.settings else 0.0,
                 "max_discount_percent": float(getattr(business.settings, 'max_discount_percent', None) or 10.0) if business.settings else 10.0,
+                "auto_print_receipts": getattr(business.settings, "auto_print_receipts", False) if business.settings else False,
                 "branding": business.settings.branding if business.settings else {}
             }
         },
@@ -147,6 +149,7 @@ async def update_business_settings(
             "receipt_width": float(updated.receipt_width),
             "tax_rate": float(updated.tax_rate),
             "max_discount_percent": float(updated.max_discount_percent) if updated.max_discount_percent else 10.0,
+            "auto_print_receipts": updated.auto_print_receipts,
             "branding": updated.branding
         },
         message="Business settings updated successfully"
