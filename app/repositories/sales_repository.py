@@ -56,7 +56,9 @@ class SalesRepository:
                 quantity=item["quantity"],
                 base_unit_quantity_used=item["base_unit_quantity_used"],
                 unit_price=item["unit_price"],
-                total_price=item["total_price"]
+                total_price=item["total_price"],
+                buying_cost=item["buying_cost"],
+                profit=item["profit"],
             )
             db.add(sale_item)
 

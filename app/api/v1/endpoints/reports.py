@@ -5,8 +5,10 @@ from datetime import date
 from app.db.database import get_db
 from app.api.deps import get_current_user
 from app.models import User, Sale
+from app.services.report_service import ReportService
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
+service = ReportService()
 
 @router.get("/today")
 async def get_today_sales(
@@ -73,4 +75,14 @@ async def get_top_products(
             "total_revenue": float(r.total_revenue)
         }
         for r in results
-    ]    
+    ]
+
+@router.get("/profit-summary")
+async def get_profit_summary(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return service.get_today_profit_summary(
+        db=db,
+        business_id=current_user.business_id,
+    )    

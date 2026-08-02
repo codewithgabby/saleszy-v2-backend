@@ -3,6 +3,7 @@ from app.repositories.sales_repository import SalesRepository
 from app.repositories.product_repository import ProductRepository
 from app.repositories.inventory_repository import InventoryRepository
 from app.repositories.business_repository import BusinessRepository
+from app.repositories.restock_repository import RestockRepository
 from decimal import Decimal
 from datetime import datetime
 from typing import Optional, List
@@ -20,6 +21,7 @@ class SalesService:
         self.product_repo = ProductRepository()
         self.inventory_repo = InventoryRepository()
         self.business_repo = BusinessRepository()
+        self.restock_repo = RestockRepository()
         self.activity_service = ActivityService()
         self.audit_service = AuditService()
         self.selling_unit_service = SellingUnitService()
@@ -87,7 +89,20 @@ class SalesService:
 
             line_total = unit_price * item["quantity"]
             subtotal += line_total
-            
+
+            latest_restock = self.restock_repo.get_latest_restock(
+                db,
+                selling_unit.product_id
+            )
+
+            buying_cost = (
+                latest_restock.buying_cost
+                if latest_restock
+                else Decimal("0.00")
+            )
+
+            profit = (unit_price - buying_cost) * item["quantity"]
+
             processed_items.append({
                 "product_id": selling_unit.product_id,
                 "product_name": product.name,
@@ -96,7 +111,9 @@ class SalesService:
                 "quantity": item["quantity"],
                 "base_unit_quantity_used": selling_unit.base_unit_quantity,
                 "unit_price": unit_price,
-                "total_price": line_total
+                "total_price": line_total,
+                "buying_cost": buying_cost,
+                "profit": profit,
             })
 
         # 2.5. Validate discount against business settings max

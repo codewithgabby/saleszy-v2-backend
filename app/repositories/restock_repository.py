@@ -34,3 +34,16 @@ class RestockRepository:
         db.flush()
 
         return restock
+
+    def get_latest_restock(
+        self,
+        db: Session,
+        product_id: uuid.UUID,
+    ) -> Restock | None:
+
+        return (
+            db.query(Restock)
+            .filter(Restock.product_id == product_id)
+            .order_by(Restock.created_at.desc())
+            .first()
+        )

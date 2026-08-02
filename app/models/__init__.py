@@ -244,6 +244,8 @@ class SaleItem(BaseModel):
     base_unit_quantity_used = Column(DECIMAL(18,6), nullable=False, default=1.0)  # Snapshot
     unit_price = Column(DECIMAL(12,2), nullable=False)
     total_price = Column(DECIMAL(12,2), nullable=False)
+    buying_cost = Column(DECIMAL(12,2), nullable=False, default=0.00)
+    profit = Column(DECIMAL(12,2), nullable=False, default=0.00)
     
     sale = relationship("Sale", back_populates="items")
     selling_unit = relationship("SellingUnit", back_populates="sale_items")
